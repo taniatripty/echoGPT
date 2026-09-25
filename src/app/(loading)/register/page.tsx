@@ -11,7 +11,7 @@ import { FormEvent, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { RegisterUser } from "../actions/auth/registerUser";
+import { RegisterUser } from "../../actions/auth/registerUser";
 
 export default function RegisterPage() {
   const router = useRouter();

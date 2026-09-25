@@ -28,28 +28,33 @@ interface ThemeProviderProps {
 
 export default function ThemeProvider({
   children,
-  defaultTheme = "dark",
+  defaultTheme = "light",
 }: ThemeProviderProps) {
   const [theme, setThemeState] = useState<Theme>(() => {
-    if (typeof document !== "undefined") {
-      const htmlTheme = document.documentElement.dataset.theme;
+    // Browser only
+    if (typeof window !== "undefined") {
+      const savedTheme = window.localStorage.getItem("theme");
 
-      if (htmlTheme === "light" || htmlTheme === "dark") {
-        return htmlTheme;
+      if (savedTheme === "light" || savedTheme === "dark") {
+        return savedTheme;
       }
     }
 
     return defaultTheme;
   });
 
+  /*
+   * Synchronize React theme with the DOM
+   * and localStorage.
+   */
   useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-    document.documentElement.classList.toggle(
-      "dark",
-      theme === "dark"
-    );
+    const root = document.documentElement;
 
-    localStorage.setItem("theme", theme);
+    root.dataset.theme = theme;
+
+    root.classList.toggle("dark", theme === "dark");
+
+    window.localStorage.setItem("theme", theme);
   }, [theme]);
 
   const setTheme = (newTheme: Theme) => {
