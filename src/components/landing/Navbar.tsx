@@ -66,7 +66,7 @@ export default function Navbar() {
           </Link>
 
           <Link
-            href="/signup"
+            href="/register"
             className="group flex items-center gap-2 rounded-full bg-foreground px-4 py-2 text-sm font-semibold text-background transition hover:opacity-90"
           >
             Sign Up
