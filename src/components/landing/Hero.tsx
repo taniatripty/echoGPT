@@ -33,7 +33,7 @@ export default function Hero() {
         {/* Buttons */}
         <div className="mt-9 flex flex-col items-center justify-center gap-4 sm:flex-row">
           <Link
-            href="/chat"
+            href="/chatDashboard"
             className="group inline-flex items-center gap-2 rounded-full bg-cyan-500 px-7 py-3.5 text-sm font-semibold text-white shadow-lg shadow-cyan-500/20 transition-all duration-300 hover:-translate-y-0.5 hover:bg-cyan-400"
           >
             Start Chatting

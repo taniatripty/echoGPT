@@ -46,7 +46,7 @@ export default function LoginPage() {
         return;
       }
 
-      router.push("/");
+      router.push("/chatDashboard");
       router.refresh();
     } catch {
       setError("Something went wrong. Please try again.");
@@ -64,7 +64,7 @@ export default function LoginPage() {
 
     try {
       await signIn("google", {
-        callbackUrl: "/",
+        callbackUrl: "/chatDashboard",
       });
     } catch {
       setGoogleLoading(false);
