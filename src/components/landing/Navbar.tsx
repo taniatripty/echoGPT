@@ -62,20 +62,10 @@ export default function Navbar() {
             href="/login"
             className="hidden text-sm font-medium text-muted-foreground transition hover:text-foreground sm:block"
           >
-            Log in
+            Sign In
           </Link>
 
-          <Link
-            href="/register"
-            className="group flex items-center gap-2 rounded-full bg-foreground px-4 py-2 text-sm font-semibold text-background transition hover:opacity-90"
-          >
-            Sign Up
-
-            <ArrowRight
-              size={15}
-              className="transition-transform group-hover:translate-x-0.5"
-            />
-          </Link>
+          
         </div>
       </div>
     </header>

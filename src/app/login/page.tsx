@@ -73,7 +73,7 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-4 py-10 text-foreground">
+    <main className="relative flex min-h-screen items-center mt-10 justify-center overflow-hidden bg-background px-4 py-10 text-foreground">
       {/* =========================
           Background Decoration
       ========================== */}
@@ -106,13 +106,20 @@ export default function LoginPage() {
             </span>
           </Link>
 
-          <h1 className="mt-8 text-3xl font-bold tracking-tight">
-            Welcome back
-          </h1>
-
-          <p className="mt-2 text-sm text-muted-foreground">
-            Sign in to continue to your AI workspace.
+           {/* =========================
+              Sign Up
+          ========================== */}
+          <p className="mt-6 text-center text-sm text-muted-foreground">
+            Do not have an account?{" "}
+            <Link
+              href="/register"
+              className="font-semibold text-blue-500 hover:text-blue-400"
+            >
+              signup
+            </Link>
           </p>
+
+         
         </div>
 
         {/* =========================
@@ -173,12 +180,7 @@ export default function LoginPage() {
                   Password
                 </label>
 
-                <Link
-                  href="/forgot-password"
-                  className="text-xs font-medium text-blue-500 hover:text-blue-400"
-                >
-                  Forgot password?
-                </Link>
+               
               </div>
 
               <div className="relative">
@@ -264,18 +266,7 @@ export default function LoginPage() {
               : "Continue with Google"}
           </button>
 
-          {/* =========================
-              Sign Up
-          ========================== */}
-          <p className="mt-6 text-center text-sm text-muted-foreground">
-            Do not have an account?{" "}
-            <Link
-              href="/signup"
-              className="font-semibold text-blue-500 hover:text-blue-400"
-            >
-              Create account
-            </Link>
-          </p>
+         
         </div>
 
         {/* =========================
