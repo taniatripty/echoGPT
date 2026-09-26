@@ -1,3 +1,4 @@
+
 // "use client";
 
 // import {
@@ -191,6 +192,7 @@
 //     </article>
 //   );
 // }
+
 "use client";
 
 import {
@@ -213,13 +215,14 @@ interface ChatResponseProps {
 export default function ChatResponse({
   content,
   highlights = [],
-  model = "EchoGPT",
+  model = "EchoGPT Fast",
   onRegenerate,
 }: ChatResponseProps) {
   const [copied, setCopied] = useState(false);
-  const [feedback, setFeedback] = useState<"up" | "down" | null>(
-    null
-  );
+
+  const [feedback, setFeedback] = useState<
+    "up" | "down" | null
+  >(null);
 
   const handleCopy = async () => {
     try {
@@ -227,7 +230,7 @@ export default function ChatResponse({
 
       setCopied(true);
 
-      setTimeout(() => {
+      window.setTimeout(() => {
         setCopied(false);
       }, 1500);
     } catch {
@@ -264,13 +267,11 @@ export default function ChatResponse({
         </div>
       </div>
 
-      {/* Response */}
+      {/* Response card */}
       <div className="relative overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-        {/* Gradient accent */}
         <div className="h-1 w-full bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-500" />
 
         <div className="p-5 sm:p-6">
-          {/* Quick answer label */}
           <div className="mb-4 flex items-center gap-2">
             <span className="h-1.5 w-1.5 rounded-full bg-cyan-500" />
 
@@ -279,12 +280,10 @@ export default function ChatResponse({
             </span>
           </div>
 
-          {/* Main content */}
           <p className="text-sm leading-7 text-foreground sm:text-[15px]">
             {content}
           </p>
 
-          {/* Highlights */}
           {highlights.length > 0 && (
             <div className="mt-6">
               <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -309,14 +308,12 @@ export default function ChatResponse({
           )}
         </div>
 
-        {/* Action bar */}
+        {/* Actions */}
         <div className="flex items-center justify-between border-t border-border bg-muted/20 px-4 py-2.5">
           <div className="flex items-center gap-1">
             <button
               type="button"
               onClick={handleCopy}
-              aria-label="Copy response"
-              title="Copy response"
               className="flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs text-muted-foreground transition hover:bg-muted hover:text-foreground"
             >
               {copied ? (
@@ -339,8 +336,6 @@ export default function ChatResponse({
                   current === "up" ? null : "up"
                 )
               }
-              aria-label="Like response"
-              title="Like"
               className={`flex h-8 w-8 items-center justify-center rounded-lg transition ${
                 feedback === "up"
                   ? "bg-emerald-500/10 text-emerald-500"
@@ -357,8 +352,6 @@ export default function ChatResponse({
                   current === "down" ? null : "down"
                 )
               }
-              aria-label="Dislike response"
-              title="Dislike"
               className={`flex h-8 w-8 items-center justify-center rounded-lg transition ${
                 feedback === "down"
                   ? "bg-red-500/10 text-red-500"
