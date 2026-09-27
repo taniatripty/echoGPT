@@ -4,11 +4,13 @@ import Pricing from '@/components/landing/Pricing'
 import Testimonials from '@/components/landing/Testimonial'
 import WhyChooseEchoGPT from '@/components/landing/WhyChoose'
 import React from 'react'
+import AIModels from '../(webapp)/chatDashboard/AllAIModels/page'
 
 export default function page() {
   return (
     <div>
      <Hero></Hero>
+     <AIModels></AIModels>
     <FAQ></FAQ>
 <WhyChooseEchoGPT></WhyChooseEchoGPT>
 <Pricing></Pricing>

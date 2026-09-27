@@ -4,14 +4,19 @@
 // import {
 //   FormEvent,
 //   KeyboardEvent,
+//   useCallback,
+//   useMemo,
 //   useRef,
 //   useState,
+//   useSyncExternalStore,
 // } from "react";
 
+// import { useSearchParams } from "next/navigation";
+
 // import {
+//   Loader2,
 //   Send,
 //   Sparkles,
-//   Loader2,
 // } from "lucide-react";
 
 // import ChatResponse from "@/components/chat/ChatResponse";
@@ -28,31 +33,30 @@
 //   AIModelId,
 //   aiModels,
 // } from "@/components/data/AImodels";
+
 // import AIModelSelector from "@/components/chat/AIModelSector";
 
 // import {
+//   getChatHistory,
 //   saveConversation,
 // } from "@/lib/chatHistory";
 
+// import type {
+//   ChatConversation,
+//   ChatMessage,
+// } from "@/types/chat.types";
 
 // // =========================================================
-// // MESSAGE TYPE
-// // =========================================================
-
-// interface Message {
-//   id: string;
-//   role: "user" | "assistant";
-//   content: string;
-//   promptId?: string;
-//   highlights?: string[];
-//   model?: string;
-// }
-
-// // =========================================================
-// // TOAST TYPE
+// // TYPES
 // // =========================================================
 
 // type ToastType = "success" | "loading";
+
+// type ToastState = {
+//   visible: boolean;
+//   message: string;
+//   type: ToastType;
+// };
 
 // // =========================================================
 // // CATEGORIES
@@ -85,37 +89,152 @@
 // ];
 
 // // =========================================================
+// // LOCAL STORAGE SUBSCRIPTION
+// // =========================================================
+// //
+// // We use useSyncExternalStore instead of useEffect +
+// // setState for loading localStorage data.
+// //
+// // This avoids:
+// // "Calling setState synchronously within an effect"
+// // =========================================================
+
+// const HISTORY_STORAGE_EVENT = "storage";
+
+// function subscribeToHistory(
+//   onStoreChange: () => void,
+// ): () => void {
+//   if (typeof window === "undefined") {
+//     return () => {};
+//   }
+
+//   window.addEventListener(
+//     HISTORY_STORAGE_EVENT,
+//     onStoreChange,
+//   );
+
+//   return () => {
+//     window.removeEventListener(
+//       HISTORY_STORAGE_EVENT,
+//       onStoreChange,
+//     );
+//   };
+// }
+
+// // =========================================================
 // // COMPONENT
 // // =========================================================
 
 // export default function ChatDashboardPage() {
-//   // =========================================================
+//   const searchParams = useSearchParams();
+
+//   // =======================================================
+//   // HISTORY CONVERSATION ID
+//   // =======================================================
+
+//   const historyConversationId =
+//     searchParams.get("conversation");
+
+//   // =======================================================
+//   // READ CONVERSATION FROM LOCAL STORAGE
+//   // =======================================================
+//   //
+//   // getSnapshot must return a cached/stable primitive.
+//   //
+//   // We return JSON string instead of an object.
+//   // =======================================================
+
+//   const getHistorySnapshot = useCallback(() => {
+//     if (
+//       typeof window === "undefined" ||
+//       !historyConversationId
+//     ) {
+//       return null;
+//     }
+
+//     const history = getChatHistory();
+
+//     const conversation = history.find(
+//       (item) =>
+//         item.id === historyConversationId,
+//     );
+
+//     if (!conversation) {
+//       return null;
+//     }
+
+//     return JSON.stringify(conversation);
+//   }, [historyConversationId]);
+
+//   const conversationSnapshot =
+//     useSyncExternalStore(
+//       subscribeToHistory,
+//       getHistorySnapshot,
+//       () => null,
+//     );
+
+//   // =======================================================
+//   // PARSE STORED CONVERSATION
+//   // =======================================================
+
+//   const storedConversation =
+//     useMemo<ChatConversation | null>(() => {
+//       if (!conversationSnapshot) {
+//         return null;
+//       }
+
+//       try {
+//         return JSON.parse(
+//           conversationSnapshot,
+//         ) as ChatConversation;
+//       } catch {
+//         return null;
+//       }
+//     }, [conversationSnapshot]);
+
+//   // =======================================================
 //   // MESSAGE STATE
-//   // =========================================================
+//   // =======================================================
 
-//   const [message, setMessage] = useState("");
+//   const [message, setMessage] =
+//     useState("");
 
-//   const [messages, setMessages] = useState<Message[]>([]);
+//   const [messages, setMessages] =
+//     useState<ChatMessage[]>(
+//       () => storedConversation?.messages ?? [],
+//     );
+
+//   // =======================================================
+//   // CONVERSATION STATE
+//   // =======================================================
+
 //   const [conversationId, setConversationId] =
-//   useState<string | null>(null);
+//     useState<string | null>(
+//       () => storedConversation?.id ?? null,
+//     );
 
-//   // =========================================================
+//   const conversationIdRef =
+//     useRef<string | null>(
+//       storedConversation?.id ?? null,
+//     );
+
+//   // =======================================================
 //   // CATEGORY STATE
-//   // =========================================================
+//   // =======================================================
 
 //   const [activeCategory, setActiveCategory] =
 //     useState<PromptCategory>("coding");
 
-//   // =========================================================
+//   // =======================================================
 //   // AI MODEL STATE
-//   // =========================================================
+//   // =======================================================
 
 //   const [selectedModel, setSelectedModel] =
 //     useState<AIModelId>("echogpt-fast");
 
-//   // =========================================================
-//   // PROMPT RESPONSE INDEX
-//   // =========================================================
+//   // =======================================================
+//   // RESPONSE INDEX
+//   // =======================================================
 //   //
 //   // Each prompt has its own response counter.
 //   //
@@ -127,219 +246,338 @@
 //   // typescript:
 //   // 0 → 1 → 2 → 0
 //   //
-//   // They are independent from each other.
-//   // =========================================================
+//   // Each prompt is independent.
+//   // =======================================================
 
 //   const [responseIndexes, setResponseIndexes] =
 //     useState<Record<string, number>>({});
 
-//   // =========================================================
+//   // =======================================================
 //   // SELECTED PROMPT
-//   // =========================================================
+//   // =======================================================
 
 //   const [selectedPromptId, setSelectedPromptId] =
 //     useState<string | null>(null);
 
-//   // =========================================================
-//   // LOADING STATE
-//   // =========================================================
+//   // =======================================================
+//   // GENERATING STATE
+//   // =======================================================
 
 //   const [isGenerating, setIsGenerating] =
 //     useState(false);
 
-//   // =========================================================
+//   // =======================================================
 //   // TOAST STATE
-//   // =========================================================
+//   // =======================================================
 
-//   const [toast, setToast] = useState<{
-//     visible: boolean;
-//     message: string;
-//     type: ToastType;
-//   }>({
-//     visible: false,
-//     message: "",
-//     type: "success",
-//   });
+//   const [toast, setToast] =
+//     useState<ToastState>({
+//       visible: false,
+//       message: "",
+//       type: "success",
+//     });
 
-//   // =========================================================
+//   // =======================================================
 //   // TOAST TIMER
-//   // =========================================================
-//   //
-//   // Prevents multiple setTimeout calls from fighting
-//   // with each other when toast messages change quickly.
-//   // =========================================================
+//   // =======================================================
 
-//   const toastTimerRef = useRef<number | null>(null);
+//   const toastTimerRef =
+//     useRef<number | null>(null);
 
-//   // =========================================================
+//   // =======================================================
 //   // ACTIVE PROMPTS
-//   // =========================================================
+//   // =======================================================
 
 //   const activePrompts =
 //     promptSuggestions[activeCategory];
 
-//   // =========================================================
+//   // =======================================================
+//   // CURRENT CONVERSATION
+//   // =======================================================
+
+//   const currentStoredConversation =
+//     storedConversation;
+
+//   // =======================================================
 //   // SHOW TOAST
-//   // =========================================================
+//   // =======================================================
 
-//   const showToast = (
-//     message: string,
-//     type: ToastType = "success",
-//   ) => {
-//     // Clear previous timer
-//     if (toastTimerRef.current !== null) {
-//       window.clearTimeout(toastTimerRef.current);
-//     }
+//   const showToast = useCallback(
+//     (
+//       message: string,
+//       type: ToastType = "success",
+//     ) => {
+//       if (toastTimerRef.current !== null) {
+//         window.clearTimeout(
+//           toastTimerRef.current,
+//         );
+//       }
 
-//     // Show new toast
-//     setToast({
-//       visible: true,
-//       message,
-//       type,
-//     });
+//       setToast({
+//         visible: true,
+//         message,
+//         type,
+//       });
 
-//     // Hide after 1 second
-//     toastTimerRef.current = window.setTimeout(() => {
-//       setToast((previous) => ({
-//         ...previous,
-//         visible: false,
-//       }));
+//       toastTimerRef.current =
+//         window.setTimeout(() => {
+//           setToast((previous) => ({
+//             ...previous,
+//             visible: false,
+//           }));
 
-//       toastTimerRef.current = null;
-//     }, 1000);
-//   };
+//           toastTimerRef.current = null;
+//         }, 1000);
+//     },
+//     [],
+//   );
 
-//   // =========================================================
-//   // FIND PROMPT BY ID
-//   // =========================================================
+//   // =======================================================
+//   // FIND PROMPT
+//   // =======================================================
 
-//   const findPromptById = (
-//     promptId: string,
-//   ): PromptSuggestion | undefined => {
-//     return Object.values(promptSuggestions)
-//       .flat()
-//       .find((prompt) => prompt.id === promptId);
-//   };
+//   const findPromptById = useCallback(
+//     (
+//       promptId: string,
+//     ): PromptSuggestion | undefined => {
+//       return Object.values(
+//         promptSuggestions,
+//       )
+//         .flat()
+//         .find(
+//           (prompt) =>
+//             prompt.id === promptId,
+//         );
+//     },
+//     [],
+//   );
 
-//   // =========================================================
+//   // =======================================================
 //   // PROMPT CLICK
-//   // =========================================================
+//   // =======================================================
 
 //   const handlePromptClick = (
 //     prompt: PromptSuggestion,
 //   ) => {
-//     // Put prompt inside textarea
 //     setMessage(prompt.prompt);
 
-//     // Remember which predefined prompt was selected
 //     setSelectedPromptId(prompt.id);
 
-//     // Show popup
 //     showToast("Prompt added");
 //   };
 
-//   // =========================================================
-//   // GET NEXT RESPONSE
-//   // =========================================================
+//   // =======================================================
+//   // GET NEXT PREDEFINED RESPONSE
+//   // =======================================================
 
 //   const getNextResponse = (
 //     promptId: string,
 //   ) => {
-//     const prompt = findPromptById(promptId);
+//     const prompt =
+//       findPromptById(promptId);
 
 //     if (!prompt) {
 //       return null;
 //     }
 
-//     // Current response index
 //     const currentIndex =
 //       responseIndexes[promptId] ?? 0;
 
-//     // Get current response
 //     const response =
 //       prompt.responses[
-//         currentIndex % prompt.responses.length
+//         currentIndex %
+//           prompt.responses.length
 //       ];
 
-//     // Move to next response
-//     setResponseIndexes((previous) => ({
-//       ...previous,
-//       [promptId]:
-//         (currentIndex + 1) %
-//         prompt.responses.length,
-//     }));
+//     setResponseIndexes(
+//       (previous) => ({
+//         ...previous,
+//         [promptId]:
+//           (currentIndex + 1) %
+//           prompt.responses.length,
+//       }),
+//     );
 
 //     return response;
 //   };
 
-//   // =========================================================
-//   // GET CURRENT AI MODEL
-//   // =========================================================
+//   // =======================================================
+//   // CURRENT MODEL
+//   // =======================================================
 
 //   const getCurrentModel = () => {
 //     return (
 //       aiModels.find(
-//         (model) => model.id === selectedModel,
+//         (model) =>
+//           model.id === selectedModel,
 //       ) ?? aiModels[0]
 //     );
 //   };
 
-//   // =========================================================
+//   // =======================================================
+//   // GET / CREATE CONVERSATION ID
+//   // =======================================================
+
+//   const getConversationId = (): string => {
+//     if (conversationIdRef.current) {
+//       return conversationIdRef.current;
+//     }
+
+//     const newConversationId =
+//       crypto.randomUUID();
+
+//     conversationIdRef.current =
+//       newConversationId;
+
+//     setConversationId(
+//       newConversationId,
+//     );
+
+//     return newConversationId;
+//   };
+
+//   // =======================================================
+//   // SAVE CURRENT CONVERSATION
+//   // =======================================================
+
+//   const saveCurrentConversation = (
+//     updatedMessages: ChatMessage[],
+//     currentConversationId: string,
+//   ) => {
+//     if (
+//       updatedMessages.length === 0
+//     ) {
+//       return;
+//     }
+
+//     const history =
+//       getChatHistory();
+
+//     const existingConversation =
+//       history.find(
+//         (item) =>
+//           item.id ===
+//           currentConversationId,
+//       );
+
+//     const firstUserMessage =
+//       updatedMessages.find(
+//         (item) =>
+//           item.role === "user",
+//       );
+
+//     const title =
+//       firstUserMessage?.content
+//         .trim()
+//         .slice(0, 50) ||
+//       "New Chat";
+
+//     const conversation: ChatConversation =
+//       {
+//         id: currentConversationId,
+
+//         title,
+
+//         messages: updatedMessages,
+
+//         createdAt:
+//           existingConversation?.createdAt ??
+//           new Date().toISOString(),
+
+//         updatedAt:
+//           new Date().toISOString(),
+//       };
+
+//     saveConversation(
+//       conversation,
+//     );
+//   };
+
+//   // =======================================================
 //   // SEND MESSAGE
-//   // =========================================================
+//   // =======================================================
 
 //   const handleSubmit = async (
 //     event: FormEvent<HTMLFormElement>,
 //   ) => {
 //     event.preventDefault();
 
-//     const trimmedMessage = message.trim();
+//     const trimmedMessage =
+//       message.trim();
 
-//     // Don't submit empty message
-//     // Don't submit while generating
-//     if (!trimmedMessage || isGenerating) {
+//     if (
+//       !trimmedMessage ||
+//       isGenerating
+//     ) {
 //       return;
 //     }
 
-//     // -------------------------------------------------------
-//     // Store current values before async operation
-//     // -------------------------------------------------------
+//     // -----------------------------------------------------
+//     // Store current values
+//     // -----------------------------------------------------
 
-//     const currentMessage = trimmedMessage;
+//     const currentMessage =
+//       trimmedMessage;
 
-//     const currentPromptId = selectedPromptId;
+//     const currentPromptId =
+//       selectedPromptId;
 
-//     const currentModel = getCurrentModel();
+//     const currentModel =
+//       getCurrentModel();
 
-//     // -------------------------------------------------------
-//     // Create user message
-//     // -------------------------------------------------------
+//     const currentConversationId =
+//       getConversationId();
 
-//     const userMessage: Message = {
+//     // -----------------------------------------------------
+//     // USER MESSAGE
+//     // -----------------------------------------------------
+
+//     const userMessage: ChatMessage = {
 //       id: crypto.randomUUID(),
+
 //       role: "user",
+
 //       content: currentMessage,
+
 //       promptId:
-//         currentPromptId ?? undefined,
+//         currentPromptId ??
+//         undefined,
 //     };
 
-//     // Add user message
-//     setMessages((previousMessages) => [
-//       ...previousMessages,
-//       userMessage,
-//     ]);
+//     // -----------------------------------------------------
+//     // ADD USER MESSAGE
+//     // -----------------------------------------------------
 
-//     // -------------------------------------------------------
-//     // Clear input
-//     // -------------------------------------------------------
+//     const messagesAfterUser: ChatMessage[] =
+//       [
+//         ...messages,
+//         userMessage,
+//       ];
+
+//     setMessages(
+//       messagesAfterUser,
+//     );
+
+//     // -----------------------------------------------------
+//     // SAVE USER MESSAGE
+//     // -----------------------------------------------------
+
+//     saveCurrentConversation(
+//       messagesAfterUser,
+//       currentConversationId,
+//     );
+
+//     // -----------------------------------------------------
+//     // CLEAR INPUT
+//     // -----------------------------------------------------
 
 //     setMessage("");
 
 //     setSelectedPromptId(null);
 
-//     // -------------------------------------------------------
-//     // Start generating
-//     // -------------------------------------------------------
+//     // -----------------------------------------------------
+//     // START GENERATING
+//     // -----------------------------------------------------
 
 //     setIsGenerating(true);
 
@@ -348,75 +586,132 @@
 //       "loading",
 //     );
 
-//     // -------------------------------------------------------
-//     // Simulate AI generation
-//     // -------------------------------------------------------
+//     // -----------------------------------------------------
+//     // SIMULATE AI
+//     // -----------------------------------------------------
 
-//     await new Promise<void>((resolve) => {
-//       window.setTimeout(resolve, 1000);
-//     });
+//     await new Promise<void>(
+//       (resolve) => {
+//         window.setTimeout(
+//           resolve,
+//           1000,
+//         );
+//       },
+//     );
 
-//     // -------------------------------------------------------
-//     // PREDEFINED PROMPT RESPONSE
-//     // -------------------------------------------------------
+//     // -----------------------------------------------------
+//     // ASSISTANT MESSAGE
+//     // -----------------------------------------------------
+
+//     let assistantMessage: ChatMessage;
+
+//     // -----------------------------------------------------
+//     // PREDEFINED PROMPT
+//     // -----------------------------------------------------
 
 //     if (currentPromptId) {
 //       const response =
-//         getNextResponse(currentPromptId);
+//         getNextResponse(
+//           currentPromptId,
+//         );
 
 //       if (response) {
-//         const assistantMessage: Message = {
+//         assistantMessage = {
 //           id: crypto.randomUUID(),
-//           role: "assistant",
-//           content: response.content,
-//           highlights: response.highlights,
-//           promptId: currentPromptId,
-//           model: currentModel.name,
-//         };
 
-//         setMessages((previousMessages) => [
-//           ...previousMessages,
-//           assistantMessage,
-//         ]);
+//           role: "assistant",
+
+//           content:
+//             response.content,
+
+//           highlights:
+//             response.highlights,
+
+//           promptId:
+//             currentPromptId,
+
+//           model:
+//             currentModel.name,
+//         };
+//       } else {
+//         assistantMessage = {
+//           id: crypto.randomUUID(),
+
+//           role: "assistant",
+
+//           content:
+//             "I could not find a predefined response for this prompt.",
+
+//           promptId:
+//             currentPromptId,
+
+//           model:
+//             currentModel.name,
+//         };
 //       }
 //     }
 
-//     // -------------------------------------------------------
-//     // MANUAL USER MESSAGE
-//     // -------------------------------------------------------
+//     // -----------------------------------------------------
+//     // NORMAL USER MESSAGE
+//     // -----------------------------------------------------
 
 //     else {
-//       const assistantMessage: Message = {
+//       assistantMessage = {
 //         id: crypto.randomUUID(),
+
 //         role: "assistant",
+
 //         content:
 //           "Your message has been received. Connect your AI API here to generate a real response from EchoGPT.",
+
 //         highlights: [
 //           "Frontend chat interface is working",
 //           "Prompt state is managed locally",
 //           "AI API can be connected next",
 //         ],
-//         model: currentModel.name,
-//       };
 
-//       setMessages((previousMessages) => [
-//         ...previousMessages,
-//         assistantMessage,
-//       ]);
+//         model:
+//           currentModel.name,
+//       };
 //     }
 
-//     // -------------------------------------------------------
-//     // Stop generating
-//     // -------------------------------------------------------
+//     // -----------------------------------------------------
+//     // ADD ASSISTANT MESSAGE
+//     // -----------------------------------------------------
+
+//     const messagesAfterAssistant: ChatMessage[] =
+//       [
+//         ...messagesAfterUser,
+//         assistantMessage,
+//       ];
+
+//     setMessages(
+//       messagesAfterAssistant,
+//     );
+
+//     // -----------------------------------------------------
+//     // SAVE COMPLETE CONVERSATION
+//     // -----------------------------------------------------
+
+//     saveCurrentConversation(
+//       messagesAfterAssistant,
+//       currentConversationId,
+//     );
+
+//     // -----------------------------------------------------
+//     // STOP GENERATING
+//     // -----------------------------------------------------
 
 //     setIsGenerating(false);
 
-//     showToast("Response ready");
+//     showToast(
+//       "Response ready",
+//     );
 //   };
 
-//   // =========================================================
+//   // =======================================================
 //   // ENTER KEY
-//   // =========================================================
+//   // =======================================================
 
 //   const handleKeyDown = (
 //     event: KeyboardEvent<HTMLTextAreaElement>,
@@ -431,20 +726,26 @@
 //     }
 //   };
 
-//   // =========================================================
+//   // =======================================================
 //   // REGENERATE RESPONSE
-//   // =========================================================
+//   // =======================================================
 
 //   const handleRegenerate = async (
 //     promptId?: string,
 //   ) => {
-//     if (!promptId || isGenerating) {
+//     if (
+//       !promptId ||
+//       isGenerating
+//     ) {
 //       return;
 //     }
 
-//     const currentModel = getCurrentModel();
+//     const currentModel =
+//       getCurrentModel();
 
-//     // Start loading
+//     const currentConversationId =
+//       getConversationId();
+
 //     setIsGenerating(true);
 
 //     showToast(
@@ -452,46 +753,79 @@
 //       "loading",
 //     );
 
-//     // Simulate generation
-//     await new Promise<void>((resolve) => {
-//       window.setTimeout(resolve, 1000);
-//     });
+//     // -----------------------------------------------------
+//     // SIMULATE GENERATION
+//     // -----------------------------------------------------
 
-//     // Get next predefined response
+//     await new Promise<void>(
+//       (resolve) => {
+//         window.setTimeout(
+//           resolve,
+//           1000,
+//         );
+//       },
+//     );
+
+//     // -----------------------------------------------------
+//     // NEXT RESPONSE
+//     // -----------------------------------------------------
+
 //     const response =
-//       getNextResponse(promptId);
+//       getNextResponse(
+//         promptId,
+//       );
 
 //     if (response) {
-//       const assistantMessage: Message = {
-//         id: crypto.randomUUID(),
-//         role: "assistant",
-//         content: response.content,
-//         highlights: response.highlights,
-//         promptId,
-//         model: currentModel.name,
-//       };
+//       const assistantMessage: ChatMessage =
+//         {
+//           id: crypto.randomUUID(),
 
-//       setMessages((previousMessages) => [
-//         ...previousMessages,
-//         assistantMessage,
-//       ]);
+//           role: "assistant",
+
+//           content:
+//             response.content,
+
+//           highlights:
+//             response.highlights,
+
+//           promptId,
+
+//           model:
+//             currentModel.name,
+//         };
+
+//       const updatedMessages: ChatMessage[] =
+//         [
+//           ...messages,
+//           assistantMessage,
+//         ];
+
+//       setMessages(
+//         updatedMessages,
+//       );
+
+//       saveCurrentConversation(
+//         updatedMessages,
+//         currentConversationId,
+//       );
 //     }
 
-//     // Stop loading
 //     setIsGenerating(false);
 
-//     showToast("New response ready");
+//     showToast(
+//       "New response ready",
+//     );
 //   };
 
-//   // =========================================================
+//   // =======================================================
 //   // RENDER
-//   // =========================================================
+//   // =======================================================
 
 //   return (
 //     <div className="flex h-full min-h-0 flex-col bg-background">
-//       {/* =====================================================
+//       {/* ===================================================
 //           TOAST
-//       ===================================================== */}
+//       =================================================== */}
 
 //       <ChatToast
 //         visible={toast.visible}
@@ -499,12 +833,13 @@
 //         type={toast.type}
 //       />
 
-//       {/* =====================================================
+//       {/* ===================================================
 //           HEADER
-//       ===================================================== */}
+//       =================================================== */}
 
 //       <header className="flex h-14 shrink-0 items-center justify-between border-b border-border px-4 sm:px-6">
 //         {/* Logo */}
+
 //         <div className="flex items-center gap-3">
 //           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-400 to-blue-600">
 //             <Sparkles className="h-4 w-4 text-white" />
@@ -522,6 +857,7 @@
 //         </div>
 
 //         {/* Demo status */}
+
 //         <div className="flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/5 px-3 py-1.5">
 //           <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
 
@@ -531,18 +867,19 @@
 //         </div>
 //       </header>
 
-//       {/* =====================================================
+//       {/* ===================================================
 //           MAIN CONTENT
-//       ===================================================== */}
+//       =================================================== */}
 
 //       <main className="min-h-0 flex-1 overflow-y-auto">
-//         {/* ===================================================
+//         {/* =================================================
 //             EMPTY STATE
-//         =================================================== */}
+//         ================================================= */}
 
 //         {messages.length === 0 ? (
 //           <div className="mx-auto flex min-h-full w-full max-w-5xl flex-col px-4 py-8 sm:px-6 lg:px-8">
 //             {/* Welcome */}
+
 //             <div className="mx-auto w-full max-w-3xl text-center">
 //               <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600 shadow-xl shadow-blue-500/20">
 //                 <Sparkles className="h-6 w-6 text-white" />
@@ -553,9 +890,9 @@
 //               </h2>
 
 //               <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
-//                 Choose a prompt below or write your
-//                 own instruction to start exploring
-//                 EchoGPT.
+//                 Choose a prompt below or write
+//                 your own instruction to start
+//                 exploring EchoGPT.
 //               </p>
 //             </div>
 
@@ -565,29 +902,36 @@
 
 //             <div className="mx-auto mt-8 w-full max-w-4xl">
 //               <div className="flex gap-2 overflow-x-auto pb-2">
-//                 {categories.map((category) => {
-//                   const isActive =
-//                     activeCategory === category.id;
+//                 {categories.map(
+//                   (category) => {
+//                     const isActive =
+//                       activeCategory ===
+//                       category.id;
 
-//                   return (
-//                     <button
-//                       key={category.id}
-//                       type="button"
-//                       onClick={() =>
-//                         setActiveCategory(
-//                           category.id,
-//                         )
-//                       }
-//                       className={`shrink-0 rounded-full border px-4 py-2 text-xs font-medium transition ${
-//                         isActive
-//                           ? "border-cyan-500 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400"
-//                           : "border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground"
-//                       }`}
-//                     >
-//                       {category.label}
-//                     </button>
-//                   );
-//                 })}
+//                     return (
+//                       <button
+//                         key={
+//                           category.id
+//                         }
+//                         type="button"
+//                         onClick={() =>
+//                           setActiveCategory(
+//                             category.id,
+//                           )
+//                         }
+//                         className={`shrink-0 rounded-full border px-4 py-2 text-xs font-medium transition ${
+//                           isActive
+//                             ? "border-cyan-500 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400"
+//                             : "border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground"
+//                         }`}
+//                       >
+//                         {
+//                           category.label
+//                         }
+//                       </button>
+//                     );
+//                   },
+//                 )}
 //               </div>
 //             </div>
 
@@ -596,34 +940,40 @@
 //             ================================================= */}
 
 //             <div className="mx-auto mt-4 grid w-full max-w-4xl gap-3 sm:grid-cols-2">
-//               {activePrompts.map((prompt) => (
-//                 <button
-//                   key={prompt.id}
-//                   type="button"
-//                   onClick={() =>
-//                     handlePromptClick(prompt)
-//                   }
-//                   className="group rounded-2xl border border-border bg-card p-5 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-cyan-500/40 hover:shadow-lg hover:shadow-cyan-500/5"
-//                 >
-//                   <div className="mb-4 flex items-center justify-between">
-//                     <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500/10 to-blue-500/10 text-cyan-500 transition group-hover:from-cyan-500 group-hover:to-blue-600 group-hover:text-white">
-//                       <Sparkles className="h-4 w-4" />
+//               {activePrompts.map(
+//                 (prompt) => (
+//                   <button
+//                     key={prompt.id}
+//                     type="button"
+//                     onClick={() =>
+//                       handlePromptClick(
+//                         prompt,
+//                       )
+//                     }
+//                     className="group rounded-2xl border border-border bg-card p-5 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-cyan-500/40 hover:shadow-lg hover:shadow-cyan-500/5"
+//                   >
+//                     <div className="mb-4 flex items-center justify-between">
+//                       <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500/10 to-blue-500/10 text-cyan-500 transition group-hover:from-cyan-500 group-hover:to-blue-600 group-hover:text-white">
+//                         <Sparkles className="h-4 w-4" />
+//                       </div>
+
+//                       <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+//                         Try
+//                       </span>
 //                     </div>
 
-//                     <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-//                       Try
-//                     </span>
-//                   </div>
+//                     <h3 className="text-sm font-semibold text-foreground transition-colors group-hover:text-cyan-500">
+//                       {prompt.title}
+//                     </h3>
 
-//                   <h3 className="text-sm font-semibold text-foreground transition-colors group-hover:text-cyan-500">
-//                     {prompt.title}
-//                   </h3>
-
-//                   <p className="mt-1.5 text-xs leading-5 text-muted-foreground">
-//                     {prompt.description}
-//                   </p>
-//                 </button>
-//               ))}
+//                     <p className="mt-1.5 text-xs leading-5 text-muted-foreground">
+//                       {
+//                         prompt.description
+//                       }
+//                     </p>
+//                   </button>
+//                 ),
+//               )}
 //             </div>
 
 //             <p className="mt-6 text-center text-[11px] text-muted-foreground">
@@ -632,53 +982,86 @@
 //             </p>
 //           </div>
 //         ) : (
-//           /* ===================================================
+//           /* =================================================
 //              CHAT MESSAGES
-//           =================================================== */
+//           ================================================= */
 
 //           <div className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6">
 //             <div className="space-y-8">
-//               {messages.map((item) => (
-//                 <div key={item.id}>
-//                   {/* =================================================
-//                       USER MESSAGE
-//                   ================================================= */}
+//               {messages.map(
+//                 (item) => (
+//                   <div
+//                     key={item.id}
+//                   >
+//                     {/* =================================================
+//                         USER MESSAGE
+//                     ================================================= */}
 
-//                   {item.role === "user" ? (
-//                     <div className="flex justify-end">
-//                       <div className="max-w-[85%] rounded-2xl rounded-br-md bg-gradient-to-r from-cyan-500 to-blue-600 px-4 py-3 text-sm leading-6 text-white shadow-sm">
-//                         {item.content}
+//                     {item.role ===
+//                     "user" ? (
+//                       <div className="flex justify-end">
+//                         <div className="max-w-[85%] rounded-2xl rounded-br-md bg-gradient-to-r from-cyan-500 to-blue-600 px-4 py-3 text-sm leading-6 text-white shadow-sm">
+//                           {
+//                             item.content
+//                           }
+//                         </div>
 //                       </div>
-//                     </div>
-//                   ) : (
-//                     /* =================================================
-//                        AI RESPONSE
-//                     ================================================= */
+//                     ) : (
+//                       /* =================================================
+//                          AI RESPONSE
+//                       ================================================= */
 
-//                     <ChatResponse
-//                       content={item.content}
-//                       highlights={item.highlights}
-//                       model={item.model}
-//                       onRegenerate={
-//                         item.promptId
-//                           ? () =>
-//                               handleRegenerate(
-//                                 item.promptId,
-//                               )
-//                           : undefined
-//                       }
-//                     />
-//                   )}
+//                       <ChatResponse
+//                         content={
+//                           item.content
+//                         }
+//                         highlights={
+//                           item.highlights
+//                         }
+//                         model={
+//                           item.model
+//                         }
+//                         onRegenerate={
+//                           item.promptId
+//                             ? () =>
+//                                 handleRegenerate(
+//                                   item.promptId,
+//                                 )
+//                             : undefined
+//                         }
+//                       />
+//                     )}
+//                   </div>
+//                 ),
+//               )}
+
+//               {/* =================================================
+//                   GENERATING INDICATOR
+//               ================================================= */}
+
+//               {isGenerating && (
+//                 <div className="flex items-center gap-3">
+//                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-500/10 text-cyan-500">
+//                     <Sparkles className="h-4 w-4" />
+//                   </div>
+
+//                   <div className="flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5">
+//                     <Loader2 className="h-3.5 w-3.5 animate-spin text-cyan-500" />
+
+//                     <span className="text-xs text-muted-foreground">
+//                       EchoGPT is thinking...
+//                     </span>
+//                   </div>
 //                 </div>
-//               ))}
+//               )}
 //             </div>
 //           </div>
 //         )}
 //       </main>
 
-//       {/* =====================================================
+//       {/* ===================================================
 //           INPUT AREA
-//       ===================================================== */}
+//       =================================================== */}
 
 //       <div className="shrink-0 border-t border-border bg-background p-3 sm:p-4">
 //         <div className="mx-auto w-full max-w-4xl">
@@ -688,8 +1071,12 @@
 
 //           <div className="mb-2">
 //             <AIModelSelector
-//               selectedModel={selectedModel}
-//               onModelChange={setSelectedModel}
+//               selectedModel={
+//                 selectedModel
+//               }
+//               onModelChange={
+//                 setSelectedModel
+//               }
 //             />
 //           </div>
 
@@ -697,12 +1084,19 @@
 //               CHAT FORM
 //           ================================================= */}
 
-//           <form onSubmit={handleSubmit}>
+//           <form
+//             onSubmit={
+//               handleSubmit
+//             }
+//           >
 //             <div className="relative overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition focus-within:border-cyan-500 focus-within:ring-2 focus-within:ring-cyan-500/10">
 //               {/* Textarea */}
+
 //               <textarea
 //                 value={message}
-//                 disabled={isGenerating}
+//                 disabled={
+//                   isGenerating
+//                 }
 //                 onChange={(event) => {
 //                   const value =
 //                     event.target.value;
@@ -711,26 +1105,32 @@
 
 //                   /*
 //                    * If user manually changes
-//                    * the predefined prompt,
+//                    * a predefined prompt,
 //                    * treat it as a normal message.
 //                    */
 
 //                   if (
 //                     value !==
 //                     findPromptById(
-//                       selectedPromptId ?? "",
+//                       selectedPromptId ??
+//                         "",
 //                     )?.prompt
 //                   ) {
-//                     setSelectedPromptId(null);
+//                     setSelectedPromptId(
+//                       null,
+//                     );
 //                   }
 //                 }}
-//                 onKeyDown={handleKeyDown}
+//                 onKeyDown={
+//                   handleKeyDown
+//                 }
 //                 placeholder={
 //                   isGenerating
 //                     ? "EchoGPT is generating..."
 //                     : "Message EchoGPT..."
 //                 }
 //                 rows={1}
+//                 maxLength={4000}
 //                 aria-label="Message EchoGPT"
 //                 className="min-h-14 max-h-48 w-full resize-none bg-transparent px-4 py-4 pr-14 text-sm leading-6 text-foreground outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-60"
 //               />
@@ -762,6 +1162,7 @@
 //             </div>
 
 //             {/* Footer text */}
+
 //             <p className="mt-2 text-center text-[10px] text-muted-foreground">
 //               EchoGPT Demo · Responses are
 //               currently predefined
@@ -773,16 +1174,15 @@
 //   );
 // }
 
+
 "use client";
 
 import {
   FormEvent,
   KeyboardEvent,
   useCallback,
-  useMemo,
   useRef,
   useState,
-  useSyncExternalStore,
 } from "react";
 
 import { useSearchParams } from "next/navigation";
@@ -863,111 +1263,58 @@ const categories: {
 ];
 
 // =========================================================
-// LOCAL STORAGE SUBSCRIPTION
-// =========================================================
-//
-// We use useSyncExternalStore instead of useEffect +
-// setState for loading localStorage data.
-//
-// This avoids:
-// "Calling setState synchronously within an effect"
+// MODEL VALIDATION
 // =========================================================
 
-const HISTORY_STORAGE_EVENT = "storage";
-
-function subscribeToHistory(
-  onStoreChange: () => void,
-): () => void {
-  if (typeof window === "undefined") {
-    return () => {};
-  }
-
-  window.addEventListener(
-    HISTORY_STORAGE_EVENT,
-    onStoreChange,
+function isAIModelId(
+  value: string | null,
+): value is AIModelId {
+  return aiModels.some(
+    (model) => model.id === value,
   );
-
-  return () => {
-    window.removeEventListener(
-      HISTORY_STORAGE_EVENT,
-      onStoreChange,
-    );
-  };
 }
 
 // =========================================================
 // COMPONENT
 // =========================================================
 
-export default function ChatDashboardPage() {
+export default function ChatDashboard() {
   const searchParams = useSearchParams();
 
   // =======================================================
-  // HISTORY CONVERSATION ID
+  // URL PARAMETERS
   // =======================================================
 
   const historyConversationId =
     searchParams.get("conversation");
 
-  // =======================================================
-  // READ CONVERSATION FROM LOCAL STORAGE
-  // =======================================================
-  //
-  // getSnapshot must return a cached/stable primitive.
-  //
-  // We return JSON string instead of an object.
-  // =======================================================
-
-  const getHistorySnapshot = useCallback(() => {
-    if (
-      typeof window === "undefined" ||
-      !historyConversationId
-    ) {
-      return null;
-    }
-
-    const history = getChatHistory();
-
-    const conversation = history.find(
-      (item) =>
-        item.id === historyConversationId,
-    );
-
-    if (!conversation) {
-      return null;
-    }
-
-    return JSON.stringify(conversation);
-  }, [historyConversationId]);
-
-  const conversationSnapshot =
-    useSyncExternalStore(
-      subscribeToHistory,
-      getHistorySnapshot,
-      () => null,
-    );
+  const modelFromUrl =
+    searchParams.get("model");
 
   // =======================================================
-  // PARSE STORED CONVERSATION
+  // INITIAL MODEL
   // =======================================================
 
-  const storedConversation =
-    useMemo<ChatConversation | null>(() => {
-      if (!conversationSnapshot) {
-        return null;
-      }
-
-      try {
-        return JSON.parse(
-          conversationSnapshot,
-        ) as ChatConversation;
-      } catch {
-        return null;
-      }
-    }, [conversationSnapshot]);
+  const initialModel: AIModelId =
+    isAIModelId(modelFromUrl)
+      ? modelFromUrl
+      : "echogpt-fast";
 
   // =======================================================
-  // MESSAGE STATE
+  // INITIAL CONVERSATION
+  // =======================================================
+
+  const initialConversation =
+    historyConversationId
+      ? getChatHistory().find(
+          (conversation) =>
+            conversation.id ===
+            historyConversationId,
+        ) ?? null
+      : null;
+
+  // =======================================================
+  // STATE
   // =======================================================
 
   const [message, setMessage] =
@@ -975,53 +1322,47 @@ export default function ChatDashboardPage() {
 
   const [messages, setMessages] =
     useState<ChatMessage[]>(
-      () => storedConversation?.messages ?? [],
+      () =>
+        initialConversation?.messages ??
+        [],
     );
-
-  // =======================================================
-  // CONVERSATION STATE
-  // =======================================================
 
   const [conversationId, setConversationId] =
     useState<string | null>(
-      () => storedConversation?.id ?? null,
+      () =>
+        initialConversation?.id ??
+        null,
     );
 
   const conversationIdRef =
     useRef<string | null>(
-      storedConversation?.id ?? null,
+      initialConversation?.id ??
+        null,
     );
-
-  // =======================================================
-  // CATEGORY STATE
-  // =======================================================
 
   const [activeCategory, setActiveCategory] =
     useState<PromptCategory>("coding");
 
-  // =======================================================
-  // AI MODEL STATE
-  // =======================================================
-
   const [selectedModel, setSelectedModel] =
-    useState<AIModelId>("echogpt-fast");
+    useState<AIModelId>(
+      initialModel,
+    );
 
   // =======================================================
   // RESPONSE INDEX
   // =======================================================
-  //
-  // Each prompt has its own response counter.
-  //
-  // Example:
-  //
-  // explain-react:
-  // 0 → 1 → 2 → 0
-  //
-  // typescript:
-  // 0 → 1 → 2 → 0
-  //
-  // Each prompt is independent.
-  // =======================================================
+
+  /*
+   * Each prompt has its own response counter.
+   *
+   * Example:
+   *
+   * explain-react
+   * 0 → 1 → 2 → 0
+   *
+   * typescript
+   * 0 → 1 → 2 → 0
+   */
 
   const [responseIndexes, setResponseIndexes] =
     useState<Record<string, number>>({});
@@ -1034,14 +1375,14 @@ export default function ChatDashboardPage() {
     useState<string | null>(null);
 
   // =======================================================
-  // GENERATING STATE
+  // GENERATING
   // =======================================================
 
   const [isGenerating, setIsGenerating] =
     useState(false);
 
   // =======================================================
-  // TOAST STATE
+  // TOAST
   // =======================================================
 
   const [toast, setToast] =
@@ -1050,10 +1391,6 @@ export default function ChatDashboardPage() {
       message: "",
       type: "success",
     });
-
-  // =======================================================
-  // TOAST TIMER
-  // =======================================================
 
   const toastTimerRef =
     useRef<number | null>(null);
@@ -1066,22 +1403,17 @@ export default function ChatDashboardPage() {
     promptSuggestions[activeCategory];
 
   // =======================================================
-  // CURRENT CONVERSATION
-  // =======================================================
-
-  const currentStoredConversation =
-    storedConversation;
-
-  // =======================================================
   // SHOW TOAST
   // =======================================================
 
   const showToast = useCallback(
     (
-      message: string,
+      toastMessage: string,
       type: ToastType = "success",
     ) => {
-      if (toastTimerRef.current !== null) {
+      if (
+        toastTimerRef.current !== null
+      ) {
         window.clearTimeout(
           toastTimerRef.current,
         );
@@ -1089,7 +1421,7 @@ export default function ChatDashboardPage() {
 
       setToast({
         visible: true,
-        message,
+        message: toastMessage,
         type,
       });
 
@@ -1166,6 +1498,7 @@ export default function ChatDashboardPage() {
     setResponseIndexes(
       (previous) => ({
         ...previous,
+
         [promptId]:
           (currentIndex + 1) %
           prompt.responses.length,
@@ -1229,8 +1562,8 @@ export default function ChatDashboardPage() {
 
     const existingConversation =
       history.find(
-        (item) =>
-          item.id ===
+        (conversation) =>
+          conversation.id ===
           currentConversationId,
       );
 
@@ -1287,7 +1620,7 @@ export default function ChatDashboardPage() {
     }
 
     // -----------------------------------------------------
-    // Store current values
+    // CURRENT VALUES
     // -----------------------------------------------------
 
     const currentMessage =
@@ -1319,7 +1652,7 @@ export default function ChatDashboardPage() {
     };
 
     // -----------------------------------------------------
-    // ADD USER MESSAGE
+    // UPDATE MESSAGES
     // -----------------------------------------------------
 
     const messagesAfterUser: ChatMessage[] =
@@ -1350,7 +1683,7 @@ export default function ChatDashboardPage() {
     setSelectedPromptId(null);
 
     // -----------------------------------------------------
-    // START GENERATING
+    // GENERATING
     // -----------------------------------------------------
 
     setIsGenerating(true);
@@ -1361,7 +1694,7 @@ export default function ChatDashboardPage() {
     );
 
     // -----------------------------------------------------
-    // SIMULATE AI
+    // DEMO DELAY
     // -----------------------------------------------------
 
     await new Promise<void>(
@@ -1426,7 +1759,7 @@ export default function ChatDashboardPage() {
     }
 
     // -----------------------------------------------------
-    // NORMAL USER MESSAGE
+    // NORMAL MESSAGE
     // -----------------------------------------------------
 
     else {
@@ -1473,7 +1806,7 @@ export default function ChatDashboardPage() {
     );
 
     // -----------------------------------------------------
-    // STOP GENERATING
+    // COMPLETE
     // -----------------------------------------------------
 
     setIsGenerating(false);
@@ -1484,7 +1817,7 @@ export default function ChatDashboardPage() {
   };
 
   // =======================================================
-  // ENTER KEY
+  // KEYBOARD HANDLER
   // =======================================================
 
   const handleKeyDown = (
@@ -1501,7 +1834,7 @@ export default function ChatDashboardPage() {
   };
 
   // =======================================================
-  // REGENERATE RESPONSE
+  // REGENERATE
   // =======================================================
 
   const handleRegenerate = async (
@@ -1528,7 +1861,7 @@ export default function ChatDashboardPage() {
     );
 
     // -----------------------------------------------------
-    // SIMULATE GENERATION
+    // DEMO DELAY
     // -----------------------------------------------------
 
     await new Promise<void>(
@@ -1597,9 +1930,9 @@ export default function ChatDashboardPage() {
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-background">
-      {/* ===================================================
+      {/* =================================================
           TOAST
-      =================================================== */}
+      ================================================= */}
 
       <ChatToast
         visible={toast.visible}
@@ -1607,9 +1940,9 @@ export default function ChatDashboardPage() {
         type={toast.type}
       />
 
-      {/* ===================================================
+      {/* =================================================
           HEADER
-      =================================================== */}
+      ================================================= */}
 
       <header className="flex h-14 shrink-0 items-center justify-between border-b border-border px-4 sm:px-6">
         {/* Logo */}
@@ -1630,20 +1963,26 @@ export default function ChatDashboardPage() {
           </div>
         </div>
 
-        {/* Demo status */}
+        {/* Current model */}
 
-        <div className="flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/5 px-3 py-1.5">
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-
-          <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
-            Demo mode
+        <div className="flex items-center gap-2">
+          <span className="hidden text-xs text-muted-foreground sm:block">
+            {getCurrentModel().name}
           </span>
+
+          <div className="flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/5 px-3 py-1.5">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+
+            <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
+              Demo mode
+            </span>
+          </div>
         </div>
       </header>
 
-      {/* ===================================================
-          MAIN CONTENT
-      =================================================== */}
+      {/* =================================================
+          MAIN
+      ================================================= */}
 
       <main className="min-h-0 flex-1 overflow-y-auto">
         {/* =================================================
@@ -1710,7 +2049,7 @@ export default function ChatDashboardPage() {
             </div>
 
             {/* =================================================
-                PROMPT CARDS
+                PROMPTS
             ================================================= */}
 
             <div className="mx-auto mt-4 grid w-full max-w-4xl gap-3 sm:grid-cols-2">
@@ -1757,7 +2096,7 @@ export default function ChatDashboardPage() {
           </div>
         ) : (
           /* =================================================
-             CHAT MESSAGES
+             CHAT
           ================================================= */
 
           <div className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6">
@@ -1767,12 +2106,10 @@ export default function ChatDashboardPage() {
                   <div
                     key={item.id}
                   >
-                    {/* =================================================
-                        USER MESSAGE
-                    ================================================= */}
-
                     {item.role ===
                     "user" ? (
+                      /* USER MESSAGE */
+
                       <div className="flex justify-end">
                         <div className="max-w-[85%] rounded-2xl rounded-br-md bg-gradient-to-r from-cyan-500 to-blue-600 px-4 py-3 text-sm leading-6 text-white shadow-sm">
                           {
@@ -1781,9 +2118,7 @@ export default function ChatDashboardPage() {
                         </div>
                       </div>
                     ) : (
-                      /* =================================================
-                         AI RESPONSE
-                      ================================================= */
+                      /* AI RESPONSE */
 
                       <ChatResponse
                         content={
@@ -1810,7 +2145,7 @@ export default function ChatDashboardPage() {
               )}
 
               {/* =================================================
-                  GENERATING INDICATOR
+                  GENERATING
               ================================================= */}
 
               {isGenerating && (
@@ -1833,14 +2168,14 @@ export default function ChatDashboardPage() {
         )}
       </main>
 
-      {/* ===================================================
+      {/* =================================================
           INPUT AREA
-      =================================================== */}
+      ================================================= */}
 
       <div className="shrink-0 border-t border-border bg-background p-3 sm:p-4">
         <div className="mx-auto w-full max-w-4xl">
           {/* =================================================
-              AI MODEL SELECTOR
+              MODEL SELECTOR
           ================================================= */}
 
           <div className="mb-2">
@@ -1855,7 +2190,7 @@ export default function ChatDashboardPage() {
           </div>
 
           {/* =================================================
-              CHAT FORM
+              FORM
           ================================================= */}
 
           <form
@@ -1877,18 +2212,16 @@ export default function ChatDashboardPage() {
 
                   setMessage(value);
 
-                  /*
-                   * If user manually changes
-                   * a predefined prompt,
-                   * treat it as a normal message.
-                   */
+                  const selectedPrompt =
+                    selectedPromptId
+                      ? findPromptById(
+                          selectedPromptId,
+                        )
+                      : undefined;
 
                   if (
                     value !==
-                    findPromptById(
-                      selectedPromptId ??
-                        "",
-                    )?.prompt
+                    selectedPrompt?.prompt
                   ) {
                     setSelectedPromptId(
                       null,
@@ -1909,9 +2242,7 @@ export default function ChatDashboardPage() {
                 className="min-h-14 max-h-48 w-full resize-none bg-transparent px-4 py-4 pr-14 text-sm leading-6 text-foreground outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-60"
               />
 
-              {/* =================================================
-                  SEND BUTTON
-              ================================================= */}
+              {/* Send */}
 
               <button
                 type="submit"
@@ -1935,7 +2266,7 @@ export default function ChatDashboardPage() {
               </button>
             </div>
 
-            {/* Footer text */}
+            {/* Footer */}
 
             <p className="mt-2 text-center text-[10px] text-muted-foreground">
               EchoGPT Demo · Responses are

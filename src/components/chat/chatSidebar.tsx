@@ -335,7 +335,7 @@ export default function ChatSidebar() {
 
           {/* AI Models */}
           <Link
-            href="/chatDashboard/AIModels"
+            href="/chatDashboard/AllAIModels"
             className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-muted-foreground transition hover:bg-muted hover:text-foreground"
           >
             <Bot className="h-4 w-4" />
