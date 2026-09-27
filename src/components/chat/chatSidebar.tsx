@@ -144,7 +144,7 @@ export default function ChatSidebar() {
           </Link>
 
           <Link
-            href="/chat/history"
+            href="/chatDashboard/chatHistory"
             className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-muted-foreground transition hover:bg-muted hover:text-foreground"
           >
             <History className="h-4 w-4" />

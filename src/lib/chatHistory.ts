@@ -1,15 +1,92 @@
-import { ChatConversation } from "@/types/chat.types";
+// import { ChatConversation } from "@/types/chat.types";
 
+
+// const HISTORY_KEY = "echogpt-chat-history";
+
+// export function getChatHistory(): ChatConversation[] {
+//   if (typeof window === "undefined") {
+//     return [];
+//   }
+
+//   const storedHistory =
+//     localStorage.getItem(HISTORY_KEY);
+
+//   if (!storedHistory) {
+//     return [];
+//   }
+
+//   try {
+//     return JSON.parse(storedHistory) as ChatConversation[];
+//   } catch {
+//     return [];
+//   }
+// }
+
+// export function saveChatHistory(
+//   history: ChatConversation[],
+// ): void {
+//   if (typeof window === "undefined") {
+//     return;
+//   }
+
+//   localStorage.setItem(
+//     HISTORY_KEY,
+//     JSON.stringify(history),
+//   );
+// }
+
+// export function saveConversation(
+//   conversation: ChatConversation,
+// ): void {
+//   const history = getChatHistory();
+
+//   const existingIndex = history.findIndex(
+//     (item) => item.id === conversation.id,
+//   );
+
+//   if (existingIndex >= 0) {
+//     history[existingIndex] = conversation;
+//   } else {
+//     history.unshift(conversation);
+//   }
+
+//   saveChatHistory(history);
+// }
+
+// export function deleteConversation(
+//   conversationId: string,
+// ): void {
+//   const history = getChatHistory();
+
+//   const updatedHistory = history.filter(
+//     (conversation) =>
+//       conversation.id !== conversationId,
+//   );
+
+//   saveChatHistory(updatedHistory);
+// }
+
+// export function clearChatHistory(): void {
+//   if (typeof window === "undefined") {
+//     return;
+//   }
+
+//   localStorage.removeItem(HISTORY_KEY);
+// }
+
+import type { ChatConversation } from "@/types/chat.types";
 
 const HISTORY_KEY = "echogpt-chat-history";
 
+/**
+ * Get all saved conversations
+ */
 export function getChatHistory(): ChatConversation[] {
   if (typeof window === "undefined") {
     return [];
   }
 
-  const storedHistory =
-    localStorage.getItem(HISTORY_KEY);
+  const storedHistory = localStorage.getItem(HISTORY_KEY);
 
   if (!storedHistory) {
     return [];
@@ -22,6 +99,22 @@ export function getChatHistory(): ChatConversation[] {
   }
 }
 
+/**
+ * Save the complete conversation history
+ */
+// export function saveChatHistory(
+//   history: ChatConversation[],
+// ): void {
+//   if (typeof window === "undefined") {
+//     return;
+//   }
+
+//   localStorage.setItem(
+//     HISTORY_KEY,
+//     JSON.stringify(history),
+//   );
+// }
+
 export function saveChatHistory(
   history: ChatConversation[],
 ): void {
@@ -33,8 +126,15 @@ export function saveChatHistory(
     HISTORY_KEY,
     JSON.stringify(history),
   );
+
+  window.dispatchEvent(
+    new Event("echogpt-history-change"),
+  );
 }
 
+/**
+ * Create or update a conversation
+ */
 export function saveConversation(
   conversation: ChatConversation,
 ): void {
@@ -45,14 +145,41 @@ export function saveConversation(
   );
 
   if (existingIndex >= 0) {
-    history[existingIndex] = conversation;
-  } else {
-    history.unshift(conversation);
+    const updatedHistory = history.map((item) =>
+      item.id === conversation.id
+        ? conversation
+        : item,
+    );
+
+    saveChatHistory(updatedHistory);
+    return;
   }
 
-  saveChatHistory(history);
+  saveChatHistory([
+    conversation,
+    ...history,
+  ]);
 }
 
+/**
+ * Get one conversation by ID
+ */
+export function getConversation(
+  conversationId: string,
+): ChatConversation | null {
+  const history = getChatHistory();
+
+  return (
+    history.find(
+      (conversation) =>
+        conversation.id === conversationId,
+    ) ?? null
+  );
+}
+
+/**
+ * Delete one conversation
+ */
 export function deleteConversation(
   conversationId: string,
 ): void {
@@ -66,6 +193,9 @@ export function deleteConversation(
   saveChatHistory(updatedHistory);
 }
 
+/**
+ * Delete all conversations
+ */
 export function clearChatHistory(): void {
   if (typeof window === "undefined") {
     return;
