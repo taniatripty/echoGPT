@@ -1,15 +1,18 @@
-// import { ChatConversation } from "@/types/chat.types";
 
+
+// import type { ChatConversation } from "@/types/chat.types";
 
 // const HISTORY_KEY = "echogpt-chat-history";
 
+// /**
+//  * Get all saved conversations
+//  */
 // export function getChatHistory(): ChatConversation[] {
 //   if (typeof window === "undefined") {
 //     return [];
 //   }
 
-//   const storedHistory =
-//     localStorage.getItem(HISTORY_KEY);
+//   const storedHistory = localStorage.getItem(HISTORY_KEY);
 
 //   if (!storedHistory) {
 //     return [];
@@ -22,6 +25,7 @@
 //   }
 // }
 
+
 // export function saveChatHistory(
 //   history: ChatConversation[],
 // ): void {
@@ -33,8 +37,15 @@
 //     HISTORY_KEY,
 //     JSON.stringify(history),
 //   );
+
+//   window.dispatchEvent(
+//     new Event("echogpt-history-change"),
+//   );
 // }
 
+// /**
+//  * Create or update a conversation
+//  */
 // export function saveConversation(
 //   conversation: ChatConversation,
 // ): void {
@@ -45,14 +56,41 @@
 //   );
 
 //   if (existingIndex >= 0) {
-//     history[existingIndex] = conversation;
-//   } else {
-//     history.unshift(conversation);
+//     const updatedHistory = history.map((item) =>
+//       item.id === conversation.id
+//         ? conversation
+//         : item,
+//     );
+
+//     saveChatHistory(updatedHistory);
+//     return;
 //   }
 
-//   saveChatHistory(history);
+//   saveChatHistory([
+//     conversation,
+//     ...history,
+//   ]);
 // }
 
+// /**
+//  * Get one conversation by ID
+//  */
+// export function getConversation(
+//   conversationId: string,
+// ): ChatConversation | null {
+//   const history = getChatHistory();
+
+//   return (
+//     history.find(
+//       (conversation) =>
+//         conversation.id === conversationId,
+//     ) ?? null
+//   );
+// }
+
+// /**
+//  * Delete one conversation
+//  */
 // export function deleteConversation(
 //   conversationId: string,
 // ): void {
@@ -66,6 +104,9 @@
 //   saveChatHistory(updatedHistory);
 // }
 
+// /**
+//  * Delete all conversations
+//  */
 // export function clearChatHistory(): void {
 //   if (typeof window === "undefined") {
 //     return;
@@ -74,66 +115,67 @@
 //   localStorage.removeItem(HISTORY_KEY);
 // }
 
+
 import type { ChatConversation } from "@/types/chat.types";
 
 const HISTORY_KEY = "echogpt-chat-history";
 
+function isBrowser(): boolean {
+  return typeof window !== "undefined";
+}
+
 /**
- * Get all saved conversations
+ * Get all saved conversations from browser localStorage.
  */
 export function getChatHistory(): ChatConversation[] {
-  if (typeof window === "undefined") {
-    return [];
-  }
-
-  const storedHistory = localStorage.getItem(HISTORY_KEY);
-
-  if (!storedHistory) {
+  if (!isBrowser()) {
     return [];
   }
 
   try {
-    return JSON.parse(storedHistory) as ChatConversation[];
+    const storedHistory = window.localStorage.getItem(HISTORY_KEY);
+
+    if (!storedHistory) {
+      return [];
+    }
+
+    const parsedHistory: unknown = JSON.parse(storedHistory);
+
+    return Array.isArray(parsedHistory)
+      ? (parsedHistory as ChatConversation[])
+      : [];
   } catch {
     return [];
   }
 }
 
 /**
- * Save the complete conversation history
+ * Save the full history list to browser localStorage.
  */
-// export function saveChatHistory(
-//   history: ChatConversation[],
-// ): void {
-//   if (typeof window === "undefined") {
-//     return;
-//   }
-
-//   localStorage.setItem(
-//     HISTORY_KEY,
-//     JSON.stringify(history),
-//   );
-// }
-
 export function saveChatHistory(
   history: ChatConversation[],
 ): void {
-  if (typeof window === "undefined") {
+  if (!isBrowser()) {
     return;
   }
 
-  localStorage.setItem(
-    HISTORY_KEY,
-    JSON.stringify(history),
-  );
+  try {
+    window.localStorage.setItem(
+      HISTORY_KEY,
+      JSON.stringify(history),
+    );
 
-  window.dispatchEvent(
-    new Event("echogpt-history-change"),
-  );
+    window.dispatchEvent(
+      new Event("echogpt-history-change"),
+    );
+  } catch {
+    // Optional: show a toast or log to an error-monitoring service.
+  }
 }
 
 /**
- * Create or update a conversation
+ * Create a conversation or replace an existing conversation
+ * with the same ID.
  */
 export function saveConversation(
   conversation: ChatConversation,
@@ -144,25 +186,20 @@ export function saveConversation(
     (item) => item.id === conversation.id,
   );
 
-  if (existingIndex >= 0) {
-    const updatedHistory = history.map((item) =>
-      item.id === conversation.id
-        ? conversation
-        : item,
-    );
+  const updatedHistory =
+    existingIndex >= 0
+      ? history.map((item) =>
+          item.id === conversation.id
+            ? conversation
+            : item,
+        )
+      : [conversation, ...history];
 
-    saveChatHistory(updatedHistory);
-    return;
-  }
-
-  saveChatHistory([
-    conversation,
-    ...history,
-  ]);
+  saveChatHistory(updatedHistory);
 }
 
 /**
- * Get one conversation by ID
+ * Find one conversation by ID.
  */
 export function getConversation(
   conversationId: string,
@@ -178,7 +215,7 @@ export function getConversation(
 }
 
 /**
- * Delete one conversation
+ * Remove one conversation by ID.
  */
 export function deleteConversation(
   conversationId: string,
@@ -194,12 +231,20 @@ export function deleteConversation(
 }
 
 /**
- * Delete all conversations
+ * Remove all local conversations.
  */
 export function clearChatHistory(): void {
-  if (typeof window === "undefined") {
+  if (!isBrowser()) {
     return;
   }
 
-  localStorage.removeItem(HISTORY_KEY);
+  try {
+    window.localStorage.removeItem(HISTORY_KEY);
+
+    window.dispatchEvent(
+      new Event("echogpt-history-change"),
+    );
+  } catch {
+    // Optional: show a toast or log to an error-monitoring service.
+  }
 }
