@@ -97,7 +97,7 @@ export default function ChatSidebar() {
 
           {/* Support */}
           <Link
-            href="/support"
+            href="/chatDashboard/support"
             className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-muted-foreground transition hover:bg-muted hover:text-foreground"
           >
             <LifeBuoy className="h-4 w-4" />
