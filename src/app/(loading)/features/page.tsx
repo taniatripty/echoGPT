@@ -45,7 +45,7 @@ const features = [
 
 export default function Features() {
   return (
-    <section className="mx-auto w-full max-w-5xl px-4 py-8">
+    <section className="mx-auto w-full max-w-5xl px-4 mt-4 py-8">
       {/* Section Header */}
       <div className="mb-6 text-center">
         <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-cyan-500">
