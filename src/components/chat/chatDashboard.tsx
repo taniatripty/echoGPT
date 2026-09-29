@@ -1,6 +1,7 @@
 
 "use client";
 
+import Image from "next/image";
 import {
   FormEvent,
   KeyboardEvent,
@@ -9,15 +10,20 @@ import {
   useState,
 } from "react";
 
+import { signOut, useSession } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 
 import {
+  LogOut,
   Loader2,
   Send,
   Sparkles,
 } from "lucide-react";
 
 import ChatResponse from "@/components/chat/ChatResponse";
+import ChatToast from "@/components/chat/ChatToster";
+import AIModelSelector from "@/components/chat/AIModelSector";
+import ThemeToggle from "@/components/layouts/ThemeToggle";
 
 import {
   PromptCategory,
@@ -25,14 +31,10 @@ import {
   promptSuggestions,
 } from "@/components/data/ChatPrompt";
 
-import ChatToast from "@/components/chat/ChatToster";
-
 import {
   AIModelId,
   aiModels,
 } from "@/components/data/AImodels";
-
-import AIModelSelector from "@/components/chat/AIModelSector";
 
 import {
   getChatHistory,
@@ -86,7 +88,9 @@ const categories: {
 function isAIModelId(
   value: string | null,
 ): value is AIModelId {
-  return aiModels.some((model) => model.id === value);
+  return aiModels.some(
+    (model) => model.id === value,
+  );
 }
 
 export default function ChatDashboard() {
@@ -110,6 +114,8 @@ function ChatWorkspace({
   conversationId: urlConversationId,
   modelId,
 }: ChatWorkspaceProps) {
+  const { data: session } = useSession();
+
   const existingConversation =
     urlConversationId
       ? getChatHistory().find(
@@ -119,11 +125,10 @@ function ChatWorkspace({
         ) ?? null
       : null;
 
-  const initialModel: AIModelId = isAIModelId(
-    modelId,
-  )
-    ? modelId
-    : "echogpt-fast";
+  const initialModel: AIModelId =
+    isAIModelId(modelId)
+      ? modelId
+      : "echogpt-fast";
 
   const [message, setMessage] =
     useState("");
@@ -131,7 +136,8 @@ function ChatWorkspace({
   const [messages, setMessages] =
     useState<ChatMessage[]>(
       () =>
-        existingConversation?.messages ?? [],
+        existingConversation?.messages ??
+        [],
     );
 
   const [conversationId, setConversationId] =
@@ -152,12 +158,16 @@ function ChatWorkspace({
   const [
     activeCategory,
     setActiveCategory,
-  ] = useState<PromptCategory>("coding");
+  ] = useState<PromptCategory>(
+    "coding",
+  );
 
   const [
     selectedModel,
     setSelectedModel,
-  ] = useState<AIModelId>(initialModel);
+  ] = useState<AIModelId>(
+    initialModel,
+  );
 
   const [
     responseIndexes,
@@ -188,6 +198,22 @@ function ChatWorkspace({
 
   const activePrompts =
     promptSuggestions[activeCategory];
+
+  // ----------------------------------------------------------
+  // USER PROFILE
+  // ----------------------------------------------------------
+
+  const userName =
+    session?.user?.name ?? "EchoGPT User";
+
+  const userEmail =
+    session?.user?.email ?? "No email available";
+
+  const userImage =
+    session?.user?.image ?? null;
+
+  const userInitial =
+    userName.charAt(0).toUpperCase();
 
   // ----------------------------------------------------------
   // TOAST
@@ -652,6 +678,16 @@ function ChatWorkspace({
   };
 
   // ----------------------------------------------------------
+  // LOGOUT
+  // ----------------------------------------------------------
+
+  const handleLogout = async () => {
+    await signOut({
+      callbackUrl: "/",
+    });
+  };
+
+  // ----------------------------------------------------------
   // UI
   // ----------------------------------------------------------
 
@@ -672,6 +708,7 @@ function ChatWorkspace({
       {/* ---------------------------------------------------- */}
 
       <header className="flex h-14 shrink-0 items-center justify-between border-b border-border bg-background/95 px-4 backdrop-blur sm:px-6">
+        {/* Logo */}
         <div className="flex items-center gap-3">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600 shadow-sm shadow-blue-500/20">
             <Sparkles className="h-4 w-4 text-white" />
@@ -688,17 +725,113 @@ function ChatWorkspace({
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <span className="hidden text-xs text-muted-foreground md:block">
-            {getCurrentModel().name}
-          </span>
+        {/* Right side */}
+        <div className="flex items-center gap-3">
+          {/* Current model */}
+          
 
-          <div className="flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/5 px-3 py-1.5">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+          {/* User Profile */}
+          <div className="group relative">
+            {/* Avatar */}
+            <button
+              type="button"
+              aria-label="Open user profile"
+              className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-border bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600 text-sm font-semibold text-white shadow-sm transition hover:ring-2 hover:ring-cyan-500/30 focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
+            >
+              {userImage ? (
+                <Image
+                  src={userImage}
+                  alt={userName}
+                  width={36}
+                  height={36}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <span>
+                  {userInitial}
+                </span>
+              )}
+            </button>
 
-            <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
-              Demo mode
-            </span>
+            {/* Dropdown */}
+            <div
+              className="
+                invisible absolute right-0 top-full z-50 mt-2 w-72
+                translate-y-1 opacity-0
+                transition-all duration-200
+                group-hover:visible
+                group-hover:translate-y-0
+                group-hover:opacity-100
+                group-focus-within:visible
+                group-focus-within:translate-y-0
+                group-focus-within:opacity-100
+              "
+            >
+              <div className="overflow-hidden rounded-2xl border border-border bg-background/95 shadow-2xl shadow-black/10 backdrop-blur-xl">
+                {/* User info */}
+                <div className="border-b border-border p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600 text-sm font-semibold text-white">
+                      {userImage ? (
+                        <Image
+                          src={userImage}
+                          alt={userName}
+                          width={44}
+                          height={44}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <span>
+                          {userInitial}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold text-foreground">
+                        {userName}
+                      </p>
+
+                      <p className="truncate text-xs text-muted-foreground">
+                        {userEmail}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Theme */}
+                <div className="flex items-center justify-between border-b border-border px-4 py-3">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">
+                      Appearance
+                    </p>
+
+                    <p className="text-[11px] text-muted-foreground">
+                      Switch light and dark mode
+                    </p>
+                  </div>
+
+                  <ThemeToggle />
+                </div>
+
+                {/* Logout */}
+                <div className="p-2">
+                  <button
+                    type="button"
+                    onClick={
+                      handleLogout
+                    }
+                    className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition hover:bg-red-500/10 hover:text-red-500"
+                  >
+                    <LogOut className="h-4 w-4" />
+
+                    <span>
+                      Log out
+                    </span>
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </header>
@@ -710,10 +843,7 @@ function ChatWorkspace({
       <main className="min-h-0 flex-1 overflow-y-auto">
         {messages.length === 0 ? (
           <div className="mx-auto flex min-h-full w-full max-w-5xl flex-col px-4 py-8 sm:px-6 lg:px-8">
-            {/* ---------------------------------------------- */}
-            {/* EMPTY STATE */}
-            {/* ---------------------------------------------- */}
-
+            {/* Empty state */}
             <div className="mx-auto w-full max-w-3xl text-center">
               <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600 shadow-xl shadow-blue-500/20">
                 <Sparkles className="h-6 w-6 text-white" />
@@ -733,10 +863,7 @@ function ChatWorkspace({
               </p>
             </div>
 
-            {/* ---------------------------------------------- */}
-            {/* CATEGORIES */}
-            {/* ---------------------------------------------- */}
-
+            {/* Categories */}
             <div className="mx-auto mt-8 w-full max-w-4xl">
               <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
                 {categories.map(
@@ -772,10 +899,7 @@ function ChatWorkspace({
               </div>
             </div>
 
-            {/* ---------------------------------------------- */}
-            {/* PROMPT CARDS */}
-            {/* ---------------------------------------------- */}
-
+            {/* Prompt cards */}
             <div className="mx-auto mt-4 grid w-full max-w-4xl gap-3 sm:grid-cols-2">
               {activePrompts.map(
                 (prompt) => (
@@ -813,10 +937,7 @@ function ChatWorkspace({
               )}
             </div>
 
-            {/* ---------------------------------------------- */}
-            {/* PROMPT HINT */}
-            {/* ---------------------------------------------- */}
-
+            {/* Prompt hint */}
             <p className="mx-auto mt-6 max-w-md text-center text-[11px] leading-5 text-muted-foreground">
               Select a prompt to use it as
               a starting point. You can edit
@@ -824,10 +945,7 @@ function ChatWorkspace({
             </p>
           </div>
         ) : (
-          /* ================================================= */
-          /* CHAT MESSAGES */
-          /* ================================================= */
-
+          /* Chat messages */
           <div className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6">
             <div className="space-y-8">
               {messages.map(
@@ -864,10 +982,7 @@ function ChatWorkspace({
                 ),
               )}
 
-              {/* -------------------------------------------- */}
-              {/* GENERATING */}
-              {/* -------------------------------------------- */}
-
+              {/* Generating */}
               {isGenerating && (
                 <div className="flex items-center gap-3">
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-500/10 text-cyan-500">
@@ -894,8 +1009,7 @@ function ChatWorkspace({
 
       <div className="shrink-0 border-t border-border bg-background p-3 sm:p-4">
         <div className="mx-auto w-full max-w-4xl">
-          {/* MODEL SELECTOR */}
-
+          {/* Model selector */}
           <div className="mb-2">
             <AIModelSelector
               selectedModel={

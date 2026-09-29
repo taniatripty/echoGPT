@@ -5,6 +5,7 @@ import Testimonials from "@/components/landing/Testimonial";
 import WhyChooseEchoGPT from "@/components/landing/WhyChoose";
 import AIModels from "../(webapp)/chatDashboard/AllAIModels/page";
 import Features from "./features/page";
+import ProductPreview from "@/components/landing/ProductPreview";
 
 export default function page() {
   return (
@@ -12,6 +13,7 @@ export default function page() {
       <Hero></Hero>
       <AIModels></AIModels>
       <Features></Features>
+      <ProductPreview></ProductPreview>
       <FAQ></FAQ>
       <WhyChooseEchoGPT></WhyChooseEchoGPT>
       <Pricing></Pricing>
