@@ -10,112 +10,347 @@ import {
   Plus,
   Bot,
   Images,
+  Video,
   Settings,
   Sparkles,
   LifeBuoy,
   Mail,
+  X,
 } from "lucide-react";
 
 import ThemeToggle from "@/components/layouts/ThemeToggle";
 import UpgradeModal from "../shared/upgradeModal";
 
-export default function ChatSidebar() {
-  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+interface ChatSidebarProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export default function ChatSidebar({
+  isOpen,
+  onClose,
+}: ChatSidebarProps) {
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] =
+    useState(false);
+
+  const handleNavigation = () => {
+    onClose();
+  };
 
   return (
     <>
-      <aside className="flex h-screen w-64 shrink-0 flex-col border-r border-border bg-background">
-        {/* Logo */}
-        <div className="flex h-16 items-center border-b border-border px-4">
+      {/* =====================================================
+          MOBILE OVERLAY
+      ====================================================== */}
+
+      {isOpen && (
+        <button
+          type="button"
+          aria-label="Close sidebar"
+          onClick={onClose}
+          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[2px] md:hidden"
+        />
+      )}
+
+      {/* =====================================================
+          SIDEBAR
+      ====================================================== */}
+
+      <aside
+        className={`
+          fixed inset-y-0 left-0 z-50
+          flex w-[280px] shrink-0 flex-col
+          border-r border-border
+          bg-background
+          shadow-2xl shadow-black/10
+          transition-transform duration-300 ease-in-out
+
+          md:static
+          md:z-auto
+          md:h-screen
+          md:w-64
+          md:translate-x-0
+          md:shadow-none
+
+          ${
+            isOpen
+              ? "translate-x-0"
+              : "-translate-x-full"
+          }
+        `}
+      >
+        {/* =================================================
+            LOGO
+        ================================================== */}
+
+        <div className="flex h-16 shrink-0 items-center justify-between border-b border-border px-4">
           <Link
             href="/chatDashboard"
+            onClick={handleNavigation}
             className="flex items-center gap-2"
           >
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-400 to-blue-600">
-              <span className="font-bold text-white">E</span>
+              <span className="font-bold text-white">
+                E
+              </span>
             </div>
 
             <span className="font-semibold text-foreground">
               Echo<span className="text-cyan-500">GPT</span>
             </span>
           </Link>
+
+          {/* Mobile close button */}
+
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close sidebar"
+            title="Close sidebar"
+            className="
+              flex
+              h-9
+              w-9
+              items-center
+              justify-center
+              rounded-lg
+              border
+              border-border
+              text-muted-foreground
+              transition-colors
+              hover:bg-muted
+              hover:text-foreground
+              md:hidden
+            "
+          >
+            <X className="h-4 w-4" />
+          </button>
         </div>
 
-        {/* New Chat */}
+        {/* =================================================
+            NEW CHAT
+        ================================================== */}
+
         <div className="p-3">
           <button
             type="button"
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/20 transition hover:shadow-blue-500/30"
+            onClick={handleNavigation}
+            className="
+              flex
+              w-full
+              items-center
+              justify-center
+              gap-2
+              rounded-xl
+              bg-gradient-to-r
+              from-cyan-500
+              to-blue-600
+              px-4
+              py-2.5
+              text-sm
+              font-semibold
+              text-white
+              shadow-lg
+              shadow-blue-500/20
+              transition
+              hover:shadow-blue-500/30
+              focus-visible:outline-none
+              focus-visible:ring-2
+              focus-visible:ring-cyan-500
+            "
           >
             <Plus className="h-4 w-4" />
+
             New Chat
           </button>
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 space-y-1 px-3">
+        {/* =================================================
+            NAVIGATION
+        ================================================== */}
+
+        <nav className="flex-1 space-y-1 overflow-y-auto px-3">
           {/* Chat */}
+
           <Link
             href="/chatDashboard"
-            className="flex items-center gap-3 rounded-xl bg-muted px-3 py-2.5 text-sm font-medium text-foreground"
+            onClick={handleNavigation}
+            className="
+              flex
+              items-center
+              gap-3
+              rounded-xl
+              bg-muted
+              px-3
+              py-2.5
+              text-sm
+              font-medium
+              text-foreground
+              transition
+              hover:bg-muted/80
+            "
           >
             <MessageSquare className="h-4 w-4" />
+
             Chat
           </Link>
-          {/* image */}
+
+          {/* Image */}
 
           <Link
             href="/chatDashboard/imageStudio"
-            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-muted-foreground transition hover:bg-muted hover:text-foreground"
+            onClick={handleNavigation}
+            className="
+              flex
+              items-center
+              gap-3
+              rounded-xl
+              px-3
+              py-2.5
+              text-sm
+              text-muted-foreground
+              transition
+              hover:bg-muted
+              hover:text-foreground
+            "
           >
             <Images className="h-4 w-4" />
+
             Image
           </Link>
 
+          {/* Video */}
+
+          <Link
+            href="/chatDashboard/video"
+            onClick={handleNavigation}
+            className="
+              flex
+              items-center
+              gap-3
+              rounded-xl
+              px-3
+              py-2.5
+              text-sm
+              text-muted-foreground
+              transition
+              hover:bg-muted
+              hover:text-foreground
+            "
+          >
+            <Video className="h-4 w-4" />
+
+            Video
+          </Link>
 
           {/* History */}
-           <Link
+
+          <Link
             href="/chatDashboard/chatHistory"
-            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-muted-foreground transition hover:bg-muted hover:text-foreground"
+            onClick={handleNavigation}
+            className="
+              flex
+              items-center
+              gap-3
+              rounded-xl
+              px-3
+              py-2.5
+              text-sm
+              text-muted-foreground
+              transition
+              hover:bg-muted
+              hover:text-foreground
+            "
           >
             <History className="h-4 w-4" />
+
             History
           </Link>
 
-         
           {/* AI Models */}
+
           <Link
             href="/chatDashboard/AllAIModels"
-            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-muted-foreground transition hover:bg-muted hover:text-foreground"
+            onClick={handleNavigation}
+            className="
+              flex
+              items-center
+              gap-3
+              rounded-xl
+              px-3
+              py-2.5
+              text-sm
+              text-muted-foreground
+              transition
+              hover:bg-muted
+              hover:text-foreground
+            "
           >
             <Bot className="h-4 w-4" />
+
             AI Models
           </Link>
 
-          {/* Horizontal Separator */}
+          {/* =================================================
+              SEPARATOR
+          ================================================== */}
+
           <div className="my-4 border-t border-border" />
 
           {/* Support */}
+
           <Link
             href="/chatDashboard/support"
-            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-muted-foreground transition hover:bg-muted hover:text-foreground"
+            onClick={handleNavigation}
+            className="
+              flex
+              items-center
+              gap-3
+              rounded-xl
+              px-3
+              py-2.5
+              text-sm
+              text-muted-foreground
+              transition
+              hover:bg-muted
+              hover:text-foreground
+            "
           >
             <LifeBuoy className="h-4 w-4" />
+
             Support
           </Link>
 
           {/* Newsletter */}
+
           <Link
             href="/chatDashboard/newsletter"
-            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-muted-foreground transition hover:bg-muted hover:text-foreground"
+            onClick={handleNavigation}
+            className="
+              flex
+              items-center
+              gap-3
+              rounded-xl
+              px-3
+              py-2.5
+              text-sm
+              text-muted-foreground
+              transition
+              hover:bg-muted
+              hover:text-foreground
+            "
           >
             <Mail className="h-4 w-4" />
+
             Newsletter
           </Link>
         </nav>
 
-        {/* Upgrade Pro Card */}
-        <div className="px-3 pb-3">
+        {/* =================================================
+            UPGRADE PRO CARD
+        ================================================== */}
+
+        <div className="shrink-0 px-3 pb-3">
           <div
             className="
               relative
@@ -132,6 +367,7 @@ export default function ChatSidebar() {
             "
           >
             {/* Decorative glow */}
+
             <div
               className="
                 pointer-events-none
@@ -147,7 +383,8 @@ export default function ChatSidebar() {
             />
 
             <div className="relative">
-              {/* Card Header */}
+              {/* Header */}
+
               <div className="mb-3 flex items-center gap-2">
                 <div
                   className="
@@ -167,9 +404,9 @@ export default function ChatSidebar() {
                   <Crown className="h-4 w-4" />
                 </div>
 
-                <div>
+                <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <p className="text-xs font-bold text-foreground">
+                    <p className="truncate text-xs font-bold text-foreground">
                       EchoGPT Pro
                     </p>
 
@@ -197,9 +434,10 @@ export default function ChatSidebar() {
               </div>
 
               {/* Features */}
+
               <div className="mb-3 space-y-1.5">
                 <div className="flex items-center gap-1.5">
-                  <Sparkles className="h-3 w-3 text-cyan-500" />
+                  <Sparkles className="h-3 w-3 shrink-0 text-cyan-500" />
 
                   <span className="text-[10px] text-muted-foreground">
                     Premium AI models
@@ -207,7 +445,7 @@ export default function ChatSidebar() {
                 </div>
 
                 <div className="flex items-center gap-1.5">
-                  <Sparkles className="h-3 w-3 text-cyan-500" />
+                  <Sparkles className="h-3 w-3 shrink-0 text-cyan-500" />
 
                   <span className="text-[10px] text-muted-foreground">
                     Unlimited conversations
@@ -215,10 +453,13 @@ export default function ChatSidebar() {
                 </div>
               </div>
 
-              {/* Upgrade Button */}
+              {/* Upgrade */}
+
               <button
                 type="button"
-                onClick={() => setIsUpgradeModalOpen(true)}
+                onClick={() =>
+                  setIsUpgradeModalOpen(true)
+                }
                 className="
                   flex
                   w-full
@@ -238,28 +479,35 @@ export default function ChatSidebar() {
                   shadow-blue-500/20
                   transition
                   hover:shadow-blue-500/30
-                  focus:outline-none
-                  focus:ring-2
-                  focus:ring-blue-500
-                  focus:ring-offset-2
+                  focus-visible:outline-none
+                  focus-visible:ring-2
+                  focus-visible:ring-blue-500
+                  focus-visible:ring-offset-2
                 "
               >
                 <Sparkles className="h-3.5 w-3.5" />
+
                 Upgrade to Pro
               </button>
             </div>
           </div>
         </div>
 
-        {/* Bottom Actions */}
-        <div className="border-t border-border p-3">
+        {/* =================================================
+            BOTTOM ACTIONS
+        ================================================== */}
+
+        <div className="shrink-0 border-t border-border p-3">
           <div className="flex items-center justify-between gap-3">
-            {/* Theme Toggle */}
+            {/* Theme */}
+
             <ThemeToggle />
 
             {/* Settings */}
+
             <Link
               href="/settings"
+              onClick={handleNavigation}
               aria-label="Settings"
               title="Settings"
               className="
@@ -275,6 +523,9 @@ export default function ChatSidebar() {
                 text-foreground
                 transition-colors
                 hover:bg-accent
+                focus-visible:outline-none
+                focus-visible:ring-2
+                focus-visible:ring-cyan-500
               "
             >
               <Settings className="h-4 w-4" />
@@ -283,10 +534,15 @@ export default function ChatSidebar() {
         </div>
       </aside>
 
-      {/* Reusable Upgrade Modal */}
+      {/* =====================================================
+          UPGRADE MODAL
+      ====================================================== */}
+
       <UpgradeModal
         open={isUpgradeModalOpen}
-        onClose={() => setIsUpgradeModalOpen(false)}
+        onClose={() =>
+          setIsUpgradeModalOpen(false)
+        }
         onUpgrade={async (plan, billingCycle) => {
           console.log("Plan:", plan);
           console.log("Billing:", billingCycle);
@@ -297,4 +553,3 @@ export default function ChatSidebar() {
     </>
   );
 }
-
