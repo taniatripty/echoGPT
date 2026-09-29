@@ -2,24 +2,32 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
+
 import {
+  Bot,
   Crown,
   History,
-  MessageSquare,
-  Plus,
-  Bot,
   Images,
-  Video,
-  Settings,
-  Sparkles,
   LifeBuoy,
   Mail,
+  MessageSquare,
+  Plus,
+  Settings,
+  Sparkles,
+  Video,
   X,
 } from "lucide-react";
 
 import ThemeToggle from "@/components/layouts/ThemeToggle";
+
 import UpgradeModal from "../shared/upgradeModal";
+
+import {
+  AIModelId,
+} from "@/components/data/AImodels";
+import SettingsModal from "../shared/settingModal";
 
 interface ChatSidebarProps {
   isOpen: boolean;
@@ -30,11 +38,69 @@ export default function ChatSidebar({
   isOpen,
   onClose,
 }: ChatSidebarProps) {
+  const router = useRouter();
+
+  /* =====================================================
+     MODAL STATES
+  ====================================================== */
+
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] =
     useState(false);
 
+  const [isSettingsModalOpen, setIsSettingsModalOpen] =
+    useState(false);
+
+  /* =====================================================
+     DEFAULT MODEL
+  ====================================================== */
+
+  const [selectedModel, setSelectedModel] =
+    useState<AIModelId>("echogpt-fast");
+
+  /* =====================================================
+     NAVIGATION
+  ====================================================== */
+
   const handleNavigation = () => {
     onClose();
+  };
+
+  /* =====================================================
+     NEW CHAT
+  ====================================================== */
+
+  const handleNewChat = () => {
+    const newConversationId = crypto.randomUUID();
+
+    router.push(
+      `/chatDashboard?conversation=${newConversationId}`,
+    );
+
+    onClose();
+  };
+
+  /* =====================================================
+     SETTINGS
+  ====================================================== */
+
+  const handleOpenSettings = () => {
+    setIsSettingsModalOpen(true);
+  };
+
+  const handleCloseSettings = () => {
+    setIsSettingsModalOpen(false);
+  };
+
+  /* =====================================================
+     UPGRADE
+  ====================================================== */
+
+  const handleOpenUpgrade = () => {
+    setIsUpgradeModalOpen(true);
+  };
+
+  const handleCloseUpgrade = () => {
+    setIsUpgradeModalOpen(false);
   };
 
   return (
@@ -48,7 +114,14 @@ export default function ChatSidebar({
           type="button"
           aria-label="Close sidebar"
           onClick={onClose}
-          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[2px] md:hidden"
+          className="
+            fixed
+            inset-0
+            z-40
+            bg-black/40
+            backdrop-blur-[2px]
+            md:hidden
+          "
         />
       )}
 
@@ -58,12 +131,22 @@ export default function ChatSidebar({
 
       <aside
         className={`
-          fixed inset-y-0 left-0 z-50
-          flex w-[280px] shrink-0 flex-col
-          border-r border-border
+          fixed
+          inset-y-0
+          left-0
+          z-50
+          flex
+          w-[280px]
+          shrink-0
+          flex-col
+          border-r
+          border-border
           bg-background
-          shadow-2xl shadow-black/10
-          transition-transform duration-300 ease-in-out
+          shadow-2xl
+          shadow-black/10
+          transition-transform
+          duration-300
+          ease-in-out
 
           md:static
           md:z-auto
@@ -83,24 +166,55 @@ export default function ChatSidebar({
             LOGO
         ================================================== */}
 
-        <div className="flex h-16 shrink-0 items-center justify-between border-b border-border px-4">
+        <div
+          className="
+            flex
+            h-16
+            shrink-0
+            items-center
+            justify-between
+            border-b
+            border-border
+            px-4
+          "
+        >
           <Link
             href="/chatDashboard"
             onClick={handleNavigation}
             className="flex items-center gap-2"
           >
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-400 to-blue-600">
+            {/* Logo */}
+
+            <div
+              className="
+                flex
+                h-8
+                w-8
+                items-center
+                justify-center
+                rounded-lg
+                bg-gradient-to-br
+                from-cyan-400
+                to-blue-600
+                shadow-sm
+              "
+            >
               <span className="font-bold text-white">
                 E
               </span>
             </div>
 
+            {/* Brand */}
+
             <span className="font-semibold text-foreground">
-              Echo<span className="text-cyan-500">GPT</span>
+              Echo
+              <span className="text-cyan-500">
+                GPT
+              </span>
             </span>
           </Link>
 
-          {/* Mobile close button */}
+          {/* Mobile close */}
 
           <button
             type="button"
@@ -120,6 +234,9 @@ export default function ChatSidebar({
               transition-colors
               hover:bg-muted
               hover:text-foreground
+              focus-visible:outline-none
+              focus-visible:ring-2
+              focus-visible:ring-cyan-500
               md:hidden
             "
           >
@@ -134,7 +251,7 @@ export default function ChatSidebar({
         <div className="p-3">
           <button
             type="button"
-            onClick={handleNavigation}
+            onClick={handleNewChat}
             className="
               flex
               w-full
@@ -157,6 +274,7 @@ export default function ChatSidebar({
               focus-visible:outline-none
               focus-visible:ring-2
               focus-visible:ring-cyan-500
+              focus-visible:ring-offset-2
             "
           >
             <Plus className="h-4 w-4" />
@@ -169,8 +287,17 @@ export default function ChatSidebar({
             NAVIGATION
         ================================================== */}
 
-        <nav className="flex-1 space-y-1 overflow-y-auto px-3">
-          {/* Chat */}
+        <nav
+          className="
+            flex-1
+            space-y-1
+            overflow-y-auto
+            px-3
+          "
+        >
+          {/* =================================================
+              CHAT
+          ================================================== */}
 
           <Link
             href="/chatDashboard"
@@ -188,6 +315,9 @@ export default function ChatSidebar({
               text-foreground
               transition
               hover:bg-muted/80
+              focus-visible:outline-none
+              focus-visible:ring-2
+              focus-visible:ring-cyan-500
             "
           >
             <MessageSquare className="h-4 w-4" />
@@ -195,7 +325,9 @@ export default function ChatSidebar({
             Chat
           </Link>
 
-          {/* Image */}
+          {/* =================================================
+              IMAGE
+          ================================================== */}
 
           <Link
             href="/chatDashboard/imageStudio"
@@ -212,6 +344,9 @@ export default function ChatSidebar({
               transition
               hover:bg-muted
               hover:text-foreground
+              focus-visible:outline-none
+              focus-visible:ring-2
+              focus-visible:ring-cyan-500
             "
           >
             <Images className="h-4 w-4" />
@@ -219,7 +354,9 @@ export default function ChatSidebar({
             Image
           </Link>
 
-          {/* Video */}
+          {/* =================================================
+              VIDEO
+          ================================================== */}
 
           <Link
             href="/chatDashboard/video"
@@ -236,6 +373,9 @@ export default function ChatSidebar({
               transition
               hover:bg-muted
               hover:text-foreground
+              focus-visible:outline-none
+              focus-visible:ring-2
+              focus-visible:ring-cyan-500
             "
           >
             <Video className="h-4 w-4" />
@@ -243,7 +383,9 @@ export default function ChatSidebar({
             Video
           </Link>
 
-          {/* History */}
+          {/* =================================================
+              HISTORY
+          ================================================== */}
 
           <Link
             href="/chatDashboard/chatHistory"
@@ -260,6 +402,9 @@ export default function ChatSidebar({
               transition
               hover:bg-muted
               hover:text-foreground
+              focus-visible:outline-none
+              focus-visible:ring-2
+              focus-visible:ring-cyan-500
             "
           >
             <History className="h-4 w-4" />
@@ -267,7 +412,9 @@ export default function ChatSidebar({
             History
           </Link>
 
-          {/* AI Models */}
+          {/* =================================================
+              AI MODELS
+          ================================================== */}
 
           <Link
             href="/chatDashboard/AllAIModels"
@@ -284,6 +431,9 @@ export default function ChatSidebar({
               transition
               hover:bg-muted
               hover:text-foreground
+              focus-visible:outline-none
+              focus-visible:ring-2
+              focus-visible:ring-cyan-500
             "
           >
             <Bot className="h-4 w-4" />
@@ -297,7 +447,9 @@ export default function ChatSidebar({
 
           <div className="my-4 border-t border-border" />
 
-          {/* Support */}
+          {/* =================================================
+              SUPPORT
+          ================================================== */}
 
           <Link
             href="/chatDashboard/support"
@@ -314,6 +466,9 @@ export default function ChatSidebar({
               transition
               hover:bg-muted
               hover:text-foreground
+              focus-visible:outline-none
+              focus-visible:ring-2
+              focus-visible:ring-cyan-500
             "
           >
             <LifeBuoy className="h-4 w-4" />
@@ -321,7 +476,9 @@ export default function ChatSidebar({
             Support
           </Link>
 
-          {/* Newsletter */}
+          {/* =================================================
+              NEWSLETTER
+          ================================================== */}
 
           <Link
             href="/chatDashboard/newsletter"
@@ -338,6 +495,9 @@ export default function ChatSidebar({
               transition
               hover:bg-muted
               hover:text-foreground
+              focus-visible:outline-none
+              focus-visible:ring-2
+              focus-visible:ring-cyan-500
             "
           >
             <Mail className="h-4 w-4" />
@@ -346,9 +506,9 @@ export default function ChatSidebar({
           </Link>
         </nav>
 
-        {/* =================================================
+        {/* =====================================================
             UPGRADE PRO CARD
-        ================================================== */}
+        ====================================================== */}
 
         <div className="shrink-0 px-3 pb-3">
           <div
@@ -457,9 +617,7 @@ export default function ChatSidebar({
 
               <button
                 type="button"
-                onClick={() =>
-                  setIsUpgradeModalOpen(true)
-                }
+                onClick={handleOpenUpgrade}
                 className="
                   flex
                   w-full
@@ -493,22 +651,29 @@ export default function ChatSidebar({
           </div>
         </div>
 
-        {/* =================================================
+        {/* =====================================================
             BOTTOM ACTIONS
-        ================================================== */}
+        ====================================================== */}
 
-        <div className="shrink-0 border-t border-border p-3">
+        <div
+          className="
+            shrink-0
+            border-t
+            border-border
+            p-3
+          "
+        >
           <div className="flex items-center justify-between gap-3">
-            {/* Theme */}
+            {/* Theme Toggle */}
 
             <ThemeToggle />
 
             {/* Settings */}
 
-            <Link
-              href="/settings"
-              onClick={handleNavigation}
-              aria-label="Settings"
+            <button
+              type="button"
+              onClick={handleOpenSettings}
+              aria-label="Open settings"
               title="Settings"
               className="
                 flex
@@ -529,10 +694,21 @@ export default function ChatSidebar({
               "
             >
               <Settings className="h-4 w-4" />
-            </Link>
+            </button>
           </div>
         </div>
       </aside>
+
+      {/* =====================================================
+          SETTINGS MODAL
+      ====================================================== */}
+
+      <SettingsModal
+        open={isSettingsModalOpen}
+        onClose={handleCloseSettings}
+        selectedModel={selectedModel}
+        onModelChange={setSelectedModel}
+      />
 
       {/* =====================================================
           UPGRADE MODAL
@@ -540,14 +716,18 @@ export default function ChatSidebar({
 
       <UpgradeModal
         open={isUpgradeModalOpen}
-        onClose={() =>
-          setIsUpgradeModalOpen(false)
-        }
-        onUpgrade={async (plan, billingCycle) => {
+        onClose={handleCloseUpgrade}
+        onUpgrade={async (
+          plan,
+          billingCycle,
+        ) => {
           console.log("Plan:", plan);
-          console.log("Billing:", billingCycle);
+          console.log(
+            "Billing:",
+            billingCycle,
+          );
 
-          // Connect your payment/checkout API here later.
+          // Connect payment / checkout API here later.
         }}
       />
     </>
